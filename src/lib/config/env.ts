@@ -23,6 +23,8 @@ const envSchema = z.object({
   ADMIN_TELEGRAM_IDS: z.string().default(""),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
   STORAGE_PROVIDER: z.string().default("local"),
+  /** Absolute durable path for local adapter (Hostinger disk). Required in production when using local storage. */
+  STORAGE_ROOT: z.string().optional(),
   UPLOAD_MAX_BYTES: z.coerce.number().int().positive().default(5_242_880),
   TEMPLATE_COVER_MAX_BYTES: z.coerce
     .number()

@@ -53,6 +53,10 @@ export interface StorageAdapter {
 }
 
 function storageRoot(): string {
+  const fromEnv = process.env.STORAGE_ROOT?.trim();
+  if (fromEnv && fromEnv.length > 0) {
+    return path.resolve(fromEnv);
+  }
   return path.join(process.cwd(), "storage", "objects");
 }
 
