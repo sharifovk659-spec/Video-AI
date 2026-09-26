@@ -177,7 +177,7 @@ export class LocalStorageAdapter implements StorageAdapter {
   }
 
   async listKeys(kind: StorageKind): Promise<string[]> {
-    const root = path.join(storageRoot(), kind);
+    const root = path.join(/* turbopackIgnore: true */ storageRoot(), kind);
     const out: string[] = [];
     async function walk(dir: string, prefix: string) {
       let entries;
