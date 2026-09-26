@@ -1,8 +1,9 @@
-import { InlineKeyboard } from "grammy";
+import type { InlineKeyboard } from "grammy";
 import { getEnv } from "@/lib/config/env";
 import { prisma } from "@/lib/db/prisma";
 import { createLogger } from "@/lib/logger";
 import { getOutboundBot } from "@/bot/outbound";
+import { buildOpenMiniAppKeyboard } from "@/bot/mini-app-keyboard";
 
 const log = createLogger("notify");
 
@@ -89,9 +90,10 @@ export async function notifyGenerationCompleted(
     return;
   }
 
-  const miniApp = getEnv().TELEGRAM_MINI_APP_URL.replace(/\/$/, "");
-  const openUrl = `${miniApp}/generations/${generationId}`;
-  const keyboard = new InlineKeyboard().webApp("🎬 Открыть видео", openUrl);
+  const keyboard = buildOpenMiniAppKeyboard(
+    "🎬 Открыть видео",
+    `/generations/${generationId}`,
+  );
 
   const title = generation.isStudio ? "AI Studio" : generation.template.title;
   const ok = await sendWithRetry(
@@ -143,6 +145,7 @@ export async function notifyGenerationFailed(
   const ok = await sendWithRetry(
     tg.telegramUserId.toString(),
     `⚠️ Не удалось создать видео «${title}». Кредиты возвращены, если списывались. Попробуйте ещё раз в приложении.`,
+    buildOpenMiniAppKeyboard("Открыть Vidoo AI"),
   );
 
   if (!ok) {

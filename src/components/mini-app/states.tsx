@@ -18,15 +18,17 @@ export function EmptyState({
 }
 
 export function ErrorState({
+  title = "Something went wrong",
   message,
   onRetry,
 }: {
+  title?: string;
   message: string;
   onRetry?: () => void;
 }) {
   return (
     <div className="vidoo-glass rounded-2xl border border-red-500/30 p-6 text-center">
-      <p className="text-sm font-semibold text-red-200">Something went wrong</p>
+      <p className="text-sm font-semibold text-red-200">{title}</p>
       <p className="mt-2 text-xs text-zinc-400">{message}</p>
       {onRetry ? (
         <button

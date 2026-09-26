@@ -5,10 +5,12 @@ import Link from "next/link";
 import { CreditPill } from "@/components/mini-app/credit-pill";
 import { TemplateCard } from "@/components/mini-app/template-card";
 import { EmptyState, ErrorState, SkeletonBlock } from "@/components/mini-app/states";
+import { useMiniAppAuth } from "@/components/mini-app/providers/mini-app-auth-provider";
 import type { HomeSection } from "@/lib/mini-app/types";
 import { fetchHomeSections, fetchTemplates } from "@/lib/mini-app/client-api";
 
 export function HomeScreen() {
+  const { user } = useMiniAppAuth();
   const [sections, setSections] = useState<HomeSection[]>([]);
   const [search, setSearch] = useState("");
   const [searchResults, setSearchResults] = useState<HomeSection["templates"]>(
@@ -65,8 +67,16 @@ export function HomeScreen() {
               Vidoo AI
             </p>
             <h1 className="bg-gradient-to-r from-violet-200 via-fuchsia-200 to-violet-100 bg-clip-text text-2xl font-semibold text-transparent">
-              Cinematic AI Videos
+              {user?.firstName
+                ? `Hi, ${user.firstName}`
+                : "Cinematic AI Videos"}
             </h1>
+            {user ? (
+              <p className="mt-1 text-xs text-zinc-400">
+                {user.freeGenerationsRemaining ?? 0} free · {user.creditBalance}{" "}
+                credits
+              </p>
+            ) : null}
           </div>
           <CreditPill />
         </div>

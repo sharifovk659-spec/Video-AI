@@ -16,6 +16,11 @@ export async function POST(request: Request) {
     const { initData } = bodySchema.parse(json);
 
     const user = await authenticateTelegramInitData(initData);
+    const freeGranted = Math.max(0, user.freeGenerationsGranted || 2);
+    const freeRemaining = Math.max(
+      0,
+      freeGranted - user.freeGenerationsUsed,
+    );
 
     const response = NextResponse.json({
       data: {
@@ -23,9 +28,12 @@ export async function POST(request: Request) {
         telegramUserId: user.telegramAccount.telegramUserId.toString(),
         username: user.telegramAccount.username,
         firstName: user.telegramAccount.firstName,
+        lastName: user.telegramAccount.lastName,
         languageCode: user.telegramAccount.languageCode,
         creditBalance: user.creditWallet?.balance ?? 0,
         freeGenerationsUsed: user.freeGenerationsUsed,
+        freeGenerationsGranted: freeGranted,
+        freeGenerationsRemaining: user.freeQuotaBlocked ? 0 : freeRemaining,
       },
     });
 
