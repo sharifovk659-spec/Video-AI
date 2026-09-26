@@ -55,7 +55,8 @@ export interface StorageAdapter {
 function storageRoot(): string {
   const fromEnv = process.env.STORAGE_ROOT?.trim();
   if (fromEnv && fromEnv.length > 0) {
-    return path.resolve(fromEnv);
+    // Absolute Hostinger path — must not be statically traced by Turbopack.
+    return path.resolve(/* turbopackIgnore: true */ fromEnv);
   }
   return path.join(process.cwd(), "storage", "objects");
 }
@@ -92,15 +93,17 @@ export class LocalStorageAdapter implements StorageAdapter {
     const safeKey = this.resolveSafeKey(key);
     // Legacy photo keys lived under storage/uploads
     if (safeKey.startsWith("users/")) {
-      const legacyRoot = path.resolve(path.join(process.cwd(), "storage", "uploads"));
+      const legacyRoot = path.resolve(
+        path.join(process.cwd(), "storage", "uploads"),
+      );
       const full = path.join(legacyRoot, safeKey);
       if (!full.startsWith(legacyRoot + path.sep) && full !== legacyRoot) {
         throw new Error("Path traversal blocked");
       }
       return full;
     }
-    const root = path.resolve(storageRoot());
-    const full = path.join(root, safeKey);
+    const root = path.resolve(/* turbopackIgnore: true */ storageRoot());
+    const full = path.join(/* turbopackIgnore: true */ root, safeKey);
     if (!full.startsWith(root + path.sep) && full !== root) {
       throw new Error("Path traversal blocked");
     }
