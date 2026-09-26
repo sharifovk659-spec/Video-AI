@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+:root {
+  --vidoo-bg: #050508;
+  --vidoo-bg-elevated: #0f0a18;
+  --vidoo-purple: #8b5cf6;
+  --vidoo-violet: #a855f7;
+  --vidoo-fuchsia: #d946ef;
+  --vidoo-text: #f4f0ff;
+  --vidoo-muted: #9ca3af;
+  --vidoo-glass: rgba(24, 16, 40, 0.72);
+  --vidoo-border: rgba(168, 85, 247, 0.22);
+}
+
+@theme inline {
+  --color-background: var(--vidoo-bg);
+  --color-foreground: var(--vidoo-text);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--vidoo-bg);
+  color: var(--vidoo-text);
+}
+
+.vidoo-gradient-bg {
+  background:
+    radial-gradient(120% 80% at 50% -20%, rgba(139, 92, 246, 0.35), transparent 55%),
+    radial-gradient(60% 50% at 100% 0%, rgba(217, 70, 239, 0.12), transparent 50%),
+    var(--vidoo-bg);
+}
+
+.vidoo-glass {
+  background: var(--vidoo-glass);
+  border: 1px solid var(--vidoo-border);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.vidoo-glow {
+  box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.15), 0 8px 32px rgba(88, 28, 135, 0.25);
+}
+
+.vidoo-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  background-size: 200% 100%;
+  animation: vidoo-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes vidoo-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vidoo-shimmer {
+    animation: none;
+  }
+}

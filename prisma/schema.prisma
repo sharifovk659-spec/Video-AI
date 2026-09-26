@@ -1,0 +1,463 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum GenerationStatus {
+  queued
+  processing
+  completed
+  failed
+  cancelled
+}
+
+enum TemplateStatus {
+  draft
+  active
+  archived
+}
+
+enum CreditTransactionType {
+  credit
+  debit
+  refund
+  adjustment
+  reserve
+  finalize
+}
+
+enum SubscriptionStatus {
+  active
+  cancelled
+  expired
+  past_due
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  failed
+  cancelled
+  refunded
+}
+
+model User {
+  id                    String   @id @default(uuid()) @db.Char(36)
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+  freeGenerationsUsed   Int      @default(0) @map("free_generations_used")
+  freeGenerationsGranted Int     @default(2) @map("free_generations_granted")
+  freeQuotaBlocked      Boolean  @default(false) @map("free_quota_blocked")
+  abuseScore            Int      @default(0) @map("abuse_score")
+  signupFingerprint     String?  @map("signup_fingerprint") @db.VarChar(128)
+  lastFreeGenerationAt  DateTime? @map("last_free_generation_at")
+  isBlocked             Boolean  @default(false) @map("is_blocked")
+
+  telegramAccount TelegramAccount?
+  creditWallet    CreditWallet?
+  generations     Generation[]
+  subscriptions   Subscription[]
+  payments        Payment[]
+  favorites       Favorite[]
+  photoUploads    UserPhotoUpload[]
+
+  @@index([signupFingerprint])
+  @@index([abuseScore])
+  @@map("users")
+}
+
+model TelegramAccount {
+  id             String   @id @default(uuid()) @db.Char(36)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  userId         String   @unique @map("user_id") @db.Char(36)
+  telegramUserId BigInt   @unique @map("telegram_user_id")
+  username       String?  @db.VarChar(255)
+  firstName      String?  @map("first_name") @db.VarChar(255)
+  lastName       String?  @map("last_name") @db.VarChar(255)
+  languageCode   String?  @map("language_code") @db.VarChar(16)
+  isPremium      Boolean  @default(false) @map("is_premium")
+  photoUrl       String?  @map("photo_url") @db.VarChar(2048)
+  lastActiveAt   DateTime @default(now()) @map("last_active_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([username])
+  @@index([lastActiveAt])
+  @@map("telegram_accounts")
+}
+
+model TemplateCategory {
+  id          String   @id @default(uuid()) @db.Char(36)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  slug        String   @unique @db.VarChar(128)
+  name        String   @db.VarChar(255)
+  description String?  @db.Text
+  sortOrder   Int      @default(0) @map("sort_order")
+  isActive    Boolean  @default(true) @map("is_active")
+
+  templates Template[]
+
+  @@index([isActive, sortOrder])
+  @@map("template_categories")
+}
+
+model AIProvider {
+  id        String   @id @default(uuid()) @db.Char(36)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  slug      String   @unique @db.VarChar(64)
+  name      String   @db.VarChar(255)
+  isActive  Boolean  @default(true) @map("is_active")
+
+  models AIModel[]
+
+  @@index([isActive])
+  @@map("ai_providers")
+}
+
+model AIModel {
+  id         String   @id @default(uuid()) @db.Char(36)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  providerId String   @map("provider_id") @db.Char(36)
+  slug       String   @db.VarChar(128)
+  name       String   @db.VarChar(255)
+  isActive   Boolean  @default(true) @map("is_active")
+
+  provider  AIProvider @relation(fields: [providerId], references: [id], onDelete: Restrict)
+  templates Template[]
+  templateVersions TemplateVersion[]
+
+  @@unique([providerId, slug])
+  @@index([isActive])
+  @@map("ai_models")
+}
+
+model Template {
+  id             String         @id @default(uuid()) @db.Char(36)
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+  categoryId     String         @map("category_id") @db.Char(36)
+  aiModelId      String         @map("ai_model_id") @db.Char(36)
+  slug           String         @unique @db.VarChar(128)
+  title          String         @db.VarChar(255)
+  description    String?        @db.Text
+  thumbnailUrl     String?        @map("thumbnail_url") @db.VarChar(2048)
+  coverUrl         String?        @map("cover_url") @db.VarChar(2048)
+  previewVideoUrl  String?        @map("preview_video_url") @db.VarChar(2048)
+  coverStorageKey  String?        @map("cover_storage_key") @db.VarChar(512)
+  previewStorageKey String?       @map("preview_storage_key") @db.VarChar(512)
+  durationSeconds  Int?           @map("duration_seconds")
+  aspectRatio      String?        @map("aspect_ratio") @db.VarChar(16)
+  isTrending       Boolean        @default(false) @map("is_trending")
+  isNew            Boolean        @default(false) @map("is_new")
+  isPopular        Boolean        @default(false) @map("is_popular")
+  estimatedApiCostCents Int       @default(0) @map("estimated_api_cost_cents")
+  status         TemplateStatus @default(draft)
+  isPro          Boolean        @default(false) @map("is_pro")
+  creditCost     Int            @default(0) @map("credit_cost")
+  /// Internal — never expose to Mini App clients
+  prompt         String         @db.Text
+  /// Internal — never expose to Mini App clients
+  negativePrompt String?        @map("negative_prompt") @db.Text
+  sortOrder      Int            @default(0) @map("sort_order")
+  currentVersion Int            @default(0) @map("current_version")
+  clonedFromId   String?        @map("cloned_from_id") @db.Char(36)
+
+  category    TemplateCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  aiModel     AIModel          @relation(fields: [aiModelId], references: [id], onDelete: Restrict)
+  generations Generation[]
+  favorites   Favorite[]
+  versions    TemplateVersion[]
+  clonedFrom  Template?        @relation("TemplateClones", fields: [clonedFromId], references: [id], onDelete: SetNull)
+  clones      Template[]       @relation("TemplateClones")
+
+  @@index([categoryId, status, sortOrder])
+  @@index([status, isPro])
+  @@index([status, isTrending, sortOrder])
+  @@index([status, isNew, createdAt(sort: Desc)])
+  @@index([status, isPopular, sortOrder])
+  @@index([status, title])
+  @@fulltext([title, description])
+  @@map("templates")
+}
+
+/// Immutable recipe snapshot for audit — generations reference the version used at create time
+model TemplateVersion {
+  id              String   @id @default(uuid()) @db.Char(36)
+  createdAt       DateTime @default(now()) @map("created_at")
+  templateId      String   @map("template_id") @db.Char(36)
+  versionNumber   Int      @map("version_number")
+  createdByUserId String?  @map("created_by_user_id") @db.Char(36)
+  changeNote      String?  @map("change_note") @db.VarChar(512)
+  title           String   @db.VarChar(255)
+  prompt          String   @db.Text
+  negativePrompt  String?  @map("negative_prompt") @db.Text
+  aiModelId       String   @map("ai_model_id") @db.Char(36)
+  providerSlug    String   @map("provider_slug") @db.VarChar(64)
+  modelSlug       String   @map("model_slug") @db.VarChar(128)
+  durationSeconds Int?     @map("duration_seconds")
+  aspectRatio     String?  @map("aspect_ratio") @db.VarChar(16)
+  creditCost      Int      @map("credit_cost")
+  coverUrl        String?  @map("cover_url") @db.VarChar(2048)
+  previewVideoUrl String?  @map("preview_video_url") @db.VarChar(2048)
+  status          TemplateStatus
+
+  template    Template     @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  aiModel     AIModel      @relation(fields: [aiModelId], references: [id], onDelete: Restrict)
+  generations Generation[]
+
+  @@unique([templateId, versionNumber])
+  @@index([templateId, createdAt(sort: Desc)])
+  @@map("template_versions")
+}
+
+model UserPhotoUpload {
+  id               String    @id @default(uuid()) @db.Char(36)
+  createdAt        DateTime  @default(now()) @map("created_at")
+  userId           String    @map("user_id") @db.Char(36)
+  storageKey       String    @unique @map("storage_key") @db.VarChar(512)
+  originalFileName String?   @map("original_file_name") @db.VarChar(255)
+  mimeType         String    @map("mime_type") @db.VarChar(64)
+  sizeBytes        Int       @map("size_bytes")
+  /// Temporary uploads auto-cleaned after expiry when unused
+  expiresAt        DateTime? @map("expires_at")
+  purpose          String    @default("user_photo") @db.VarChar(32)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  generations Generation[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([expiresAt])
+  @@map("user_photo_uploads")
+}
+
+model Generation {
+  id                       String           @id @default(uuid()) @db.Char(36)
+  createdAt                DateTime         @default(now()) @map("created_at")
+  updatedAt                DateTime         @updatedAt @map("updated_at")
+  userId                   String           @map("user_id") @db.Char(36)
+  templateId               String           @map("template_id") @db.Char(36)
+  templateVersionId        String?          @map("template_version_id") @db.Char(36)
+  photoUploadId            String?          @map("photo_upload_id") @db.Char(36)
+  status                   GenerationStatus @default(queued)
+  stage                    String?          @db.VarChar(64)
+  outputUrl                String?          @map("output_url") @db.VarChar(2048)
+  /// Object storage key when video is stored locally — never blob in DB
+  outputStorageKey         String?          @map("output_storage_key") @db.VarChar(512)
+  errorMessage             String?          @map("error_message") @db.Text
+  creditsCharged           Int              @default(0) @map("credits_charged")
+  creditsReserved          Int              @default(0) @map("credits_reserved")
+  creditsFinalized         Boolean          @default(false) @map("credits_finalized")
+  usedFreeQuota            Boolean          @default(false) @map("used_free_quota")
+  creditsRefunded          Boolean          @default(false) @map("credits_refunded")
+  providerSlug             String?          @map("provider_slug") @db.VarChar(64)
+  providerModelSlug        String?          @map("provider_model_slug") @db.VarChar(128)
+  providerRequestId        String?          @map("provider_request_id") @db.VarChar(255)
+  estimatedProviderCostCents Int            @default(0) @map("estimated_provider_cost_cents")
+  idempotencyKey           String?          @unique @map("idempotency_key") @db.VarChar(128)
+  /// Snapshot of template recipe at generation create time
+  snapshottedPrompt        String?          @map("snapshotted_prompt") @db.Text
+  snapshottedNegativePrompt String?         @map("snapshotted_negative_prompt") @db.Text
+  /// User-provided studio description only — never internal system prompts
+  userPrompt               String?          @map("user_prompt") @db.VarChar(2000)
+  durationSeconds          Int?             @map("duration_seconds")
+  aspectRatio              String?          @map("aspect_ratio") @db.VarChar(16)
+  isStudio                 Boolean          @default(false) @map("is_studio")
+  notifiedCompletedAt      DateTime?        @map("notified_completed_at")
+  notifiedFailedAt         DateTime?        @map("notified_failed_at")
+
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template           Template            @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  templateVersion    TemplateVersion?    @relation(fields: [templateVersionId], references: [id], onDelete: SetNull)
+  photoUpload        UserPhotoUpload?    @relation(fields: [photoUploadId], references: [id], onDelete: SetNull)
+  job                GenerationJob?
+  creditTransactions CreditTransaction[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, status, createdAt(sort: Desc)])
+  @@index([status, createdAt])
+  @@index([templateId, createdAt(sort: Desc)])
+  @@index([templateVersionId])
+  @@index([providerRequestId])
+  @@map("generations")
+}
+
+model GenerationJob {
+  id             String           @id @default(uuid()) @db.Char(36)
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+  generationId   String           @unique @map("generation_id") @db.Char(36)
+  status         GenerationStatus @default(queued)
+  attempts       Int              @default(0)
+  maxAttempts    Int              @default(3) @map("max_attempts")
+  scheduledAt    DateTime?        @map("scheduled_at")
+  startedAt      DateTime?        @map("started_at")
+  finishedAt     DateTime?        @map("finished_at")
+  lockedUntil    DateTime?        @map("locked_until")
+  timedOutAt     DateTime?        @map("timed_out_at")
+  lastError      String?          @map("last_error") @db.Text
+  nextPollAt     DateTime?        @map("next_poll_at")
+
+  generation Generation @relation(fields: [generationId], references: [id], onDelete: Cascade)
+
+  @@index([status, scheduledAt])
+  @@index([status, lockedUntil, nextPollAt])
+  @@map("generation_jobs")
+}
+
+model CreditWallet {
+  id        String   @id @default(uuid()) @db.Char(36)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  userId    String   @unique @map("user_id") @db.Char(36)
+  balance   Int      @default(0)
+  reserved  Int      @default(0)
+
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions CreditTransaction[]
+
+  @@map("credit_wallets")
+}
+
+model CreditTransaction {
+  id              String                @id @default(uuid()) @db.Char(36)
+  createdAt       DateTime              @default(now()) @map("created_at")
+  walletId        String                @map("wallet_id") @db.Char(36)
+  type            CreditTransactionType
+  amount          Int
+  balanceAfter    Int                   @map("balance_after")
+  reservedAfter   Int                   @default(0) @map("reserved_after")
+  reason          String                @db.VarChar(255)
+  note            String?               @db.VarChar(512)
+  adminActorId    String?               @map("admin_actor_id") @db.Char(36)
+  generationId    String?               @map("generation_id") @db.Char(36)
+  paymentId       String?               @map("payment_id") @db.Char(36)
+  metadata        Json?
+
+  wallet     CreditWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  generation Generation?  @relation(fields: [generationId], references: [id], onDelete: SetNull)
+  payment    Payment?     @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@index([walletId, createdAt(sort: Desc)])
+  @@index([generationId])
+  @@index([paymentId])
+  @@index([adminActorId])
+  @@index([type, createdAt(sort: Desc)])
+  @@map("credit_transactions")
+}
+
+model Subscription {
+  id                 String             @id @default(uuid()) @db.Char(36)
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+  userId             String             @map("user_id") @db.Char(36)
+  planCode           String             @map("plan_code") @db.VarChar(64)
+  status             SubscriptionStatus @default(active)
+  currentPeriodStart DateTime           @map("current_period_start")
+  currentPeriodEnd   DateTime           @map("current_period_end")
+  externalId         String?            @unique @map("external_id") @db.VarChar(255)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@map("subscriptions")
+}
+
+model CreditPackage {
+  id        String   @id @default(uuid()) @db.Char(36)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  slug      String   @unique @db.VarChar(128)
+  name      String   @db.VarChar(255)
+  credits   Int
+  /// Price in minor units (cents). Editable from admin — not hardcoded in business logic.
+  priceCents Int     @map("price_cents")
+  currency  String   @default("USD") @db.Char(3)
+  isActive  Boolean  @default(true) @map("is_active")
+  isPopular Boolean  @default(false) @map("is_popular")
+  sortOrder Int      @default(0) @map("sort_order")
+  benefits  String?  @db.Text
+
+  payments Payment[]
+
+  @@index([isActive, sortOrder])
+  @@map("credit_packages")
+}
+
+model Payment {
+  id              String        @id @default(uuid()) @db.Char(36)
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  userId          String        @map("user_id") @db.Char(36)
+  packageId       String?       @map("package_id") @db.Char(36)
+  amountCents     Int           @map("amount_cents")
+  currency        String        @default("USD") @db.Char(3)
+  creditsToGrant  Int           @default(0) @map("credits_to_grant")
+  creditsGranted  Boolean       @default(false) @map("credits_granted")
+  status          PaymentStatus @default(pending)
+  provider        String        @db.VarChar(64)
+  externalId      String        @unique @map("external_id") @db.VarChar(255)
+  description     String?       @db.VarChar(512)
+  metadata        Json?
+  paidAt          DateTime?     @map("paid_at")
+  failedAt        DateTime?     @map("failed_at")
+  refundedAt      DateTime?     @map("refunded_at")
+
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  package            CreditPackage?      @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  creditTransactions CreditTransaction[]
+  webhookEvents      PaymentWebhookEvent[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status, paidAt])
+  @@index([status])
+  @@index([packageId])
+  @@map("payments")
+}
+
+model PaymentWebhookEvent {
+  id          String   @id @default(uuid()) @db.Char(36)
+  createdAt   DateTime @default(now()) @map("created_at")
+  provider    String   @db.VarChar(64)
+  eventKey    String   @unique @map("event_key") @db.VarChar(255)
+  paymentId   String?  @map("payment_id") @db.Char(36)
+  payloadHash String?  @map("payload_hash") @db.VarChar(128)
+  processedAt DateTime @default(now()) @map("processed_at")
+
+  payment Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@index([provider, createdAt(sort: Desc)])
+  @@map("payment_webhook_events")
+}
+
+model Favorite {
+  id         String   @id @default(uuid()) @db.Char(36)
+  createdAt  DateTime @default(now()) @map("created_at")
+  userId     String   @map("user_id") @db.Char(36)
+  templateId String   @map("template_id") @db.Char(36)
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, templateId])
+  @@index([userId])
+  @@map("favorites")
+}
+
+model AppSetting {
+  id          String   @id @default(uuid()) @db.Char(36)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  key         String   @unique @db.VarChar(128)
+  value       Json
+  description String?  @db.VarChar(512)
+
+  @@map("app_settings")
+}

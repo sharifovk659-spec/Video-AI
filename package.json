@@ -1,0 +1,47 @@
+{
+  "name": "vidoo-ai",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "bot:dev": "tsx watch src/bot/index.ts",
+    "bot:start": "tsx src/bot/index.ts",
+    "worker:dev": "tsx watch src/jobs/worker.ts",
+    "worker:start": "tsx src/jobs/worker.ts",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:push": "prisma db push",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:validate": "prisma validate",
+    "postinstall": "prisma generate",
+    "test": "tsx --test src/lib/config/env.test.ts src/lib/security/telegram-init-data.test.ts src/lib/auth/session-token.test.ts src/lib/auth/authenticate-telegram-init-data.test.ts src/lib/uploads/validate-photo.test.ts src/lib/ai/providers/mock.test.ts src/lib/credits/monetization.test.ts src/lib/moderation/pre-generation.test.ts src/lib/critical-flows.integration.test.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.16.2",
+    "grammy": "^1.38.2",
+    "next": "16.3.6",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.6",
+    "prisma": "^6.16.2",
+    "tailwindcss": "^4",
+    "tsx": "^4.20.5",
+    "typescript": "^5"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  }
+}
