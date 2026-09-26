@@ -138,16 +138,35 @@ Redeploy after adding/changing secrets.
 
 ### D. Custom domain `video.inovaauto.com`
 
-1. Vercel → Project → **Settings → Domains** → Add `video.inovaauto.com`.
-2. In Hostinger DNS for `inovaauto.com`, create the record Vercel shows (usually **CNAME** to `cname.vercel-dns.com`, or A/ALIAS as instructed).
-3. Do **not** change DNS for `inovaauto.com` apex or unrelated subdomains.
-4. Wait for TLS certificate status **Valid** on Vercel.
-5. Confirm:
+Domain is attached to Vercel project **video-ai**. Do **not** change DNS for `inovaauto.com` apex or other subdomains.
+
+#### Hostinger DNS (only `video` subdomain)
+
+1. Open **Hostinger hPanel** → **Domains** → `inovaauto.com` → **DNS / DNS Zone Editor**.
+2. If there is an existing `A` / `AAAA` / `CNAME` for host `video` pointing at Hostinger (parking/default page), **Edit or Delete only that `video` record**.
+3. Add **exactly one** of these (prefer the project-specific CNAME from Vercel):
+
+| Type | Name/Host | Value / Points to | TTL |
+|------|-----------|-------------------|-----|
+| **CNAME** | `video` | `4351849dd24661ea.vercel-dns-017.com` | 300 |
+
+Fallback if CNAME is not allowed on that host:
+
+| Type | Name/Host | Value / Points to | TTL |
+|------|-----------|-------------------|-----|
+| **A** | `video` | `76.76.21.21` | 300 |
+
+Also remove any Hostinger `AAAA` for `video` if present (they can keep traffic on parking IPv6).
+4. Save → wait for DNS (often 5–30 min).
+5. Vercel → **video-ai** → **Settings → Domains** → `video.inovaauto.com` → status **Valid** (TLS issued).
+6. Confirm:
 
 ```bash
 curl -fsS https://video.inovaauto.com/api/health
 curl -fsS https://video.inovaauto.com/api/ready
 ```
+
+Current misconfig (as of prep): `video.inovaauto.com` still resolves to Hostinger parking IPs and serves Hostinger “Default page” — until the A/CNAME above is applied, APIs on the custom domain stay 404.
 
 ### E. Telegram after HTTPS is live
 
