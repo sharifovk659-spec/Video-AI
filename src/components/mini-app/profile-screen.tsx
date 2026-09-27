@@ -156,9 +156,9 @@ export function ProfileScreen() {
       {user.isAdmin ? (
         <Link
           href="/admin"
-          className="block text-center text-xs text-violet-400/80"
+          className="flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-3 text-sm font-semibold text-white vidoo-glow"
         >
-          Open admin console
+          Admin Panel
         </Link>
       ) : null}
     </div>

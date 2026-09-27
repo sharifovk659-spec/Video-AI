@@ -26,6 +26,12 @@ export function AdminShell({ children }: { children: ReactNode }) {
         <p className="text-xs font-semibold uppercase tracking-widest text-violet-600">
           Vidoo Admin
         </p>
+        <Link
+          href="/mini-app"
+          className="mt-2 inline-block text-xs text-zinc-500 hover:text-violet-600"
+        >
+          ← Mini App
+        </Link>
         <nav className="mt-4 flex gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
           {NAV.map((item) => {
             const active =
