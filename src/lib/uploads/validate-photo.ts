@@ -50,13 +50,18 @@ export function validatePhotoUpload(
     throw new AppError("VALIDATION_ERROR", "Unsupported file extension");
   }
 
-  const mime = declaredMime.split(";")[0]?.trim().toLowerCase() ?? "";
-  if (!ALLOWED_MIME.has(mime)) {
-    throw new AppError("VALIDATION_ERROR", "Unsupported MIME type");
+  let mime = declaredMime.split(";")[0]?.trim().toLowerCase() ?? "";
+  const signature = SIGNATURES.find((s) => s.check(buffer));
+  if (!signature) {
+    throw new AppError("VALIDATION_ERROR", "File content does not match type");
   }
 
-  const signature = SIGNATURES.find((s) => s.check(buffer));
-  if (!signature || signature.mime !== mime) {
+  if (!mime) {
+    // Telegram WebView often omits file.type — trust magic bytes + extension.
+    mime = signature.mime;
+  } else if (!ALLOWED_MIME.has(mime)) {
+    throw new AppError("VALIDATION_ERROR", "Unsupported MIME type");
+  } else if (signature.mime !== mime) {
     throw new AppError("VALIDATION_ERROR", "File content does not match type");
   }
 

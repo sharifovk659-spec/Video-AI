@@ -44,11 +44,13 @@ export async function getRetentionSettings(): Promise<RetentionSettings> {
 export async function deleteUserMedia(userId: string): Promise<{ deleted: number }> {
   const uploads = await prisma.userPhotoUpload.findMany({
     where: { userId },
-    select: { id: true, storageKey: true },
   });
+  const { deleteUserPhotoStorage } = await import(
+    "@/lib/uploads/user-photo-storage"
+  );
   const storage = getStorageAdapter();
   for (const u of uploads) {
-    await storage.deleteObject(u.storageKey);
+    await deleteUserPhotoStorage(u);
   }
   // Detach from generations then delete rows
   await prisma.generation.updateMany({

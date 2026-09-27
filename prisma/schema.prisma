@@ -223,6 +223,8 @@ model UserPhotoUpload {
   createdAt        DateTime  @default(now()) @map("created_at")
   userId           String    @map("user_id") @db.Char(36)
   storageKey       String    @unique @map("storage_key") @db.VarChar(512)
+  /// Inline bytes for serverless (Vercel); null when file is on durable disk
+  dataBytes        Bytes?    @map("data_bytes") @db.MediumBlob
   originalFileName String?   @map("original_file_name") @db.VarChar(255)
   mimeType         String    @map("mime_type") @db.VarChar(64)
   sizeBytes        Int       @map("size_bytes")

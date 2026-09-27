@@ -14,6 +14,11 @@ describe("validatePhotoUpload", () => {
     assert.equal(result.extension, "png");
   });
 
+  it("accepts png with empty declared mime (Telegram WebView)", () => {
+    const result = validatePhotoUpload(PNG_HEADER, "", "photo.png", 1024);
+    assert.equal(result.mimeType, "image/png");
+  });
+
   it("rejects executable extension", () => {
     assert.throws(
       () => validatePhotoUpload(PNG_HEADER, "image/png", "bad.exe", 1024),

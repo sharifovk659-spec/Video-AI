@@ -37,7 +37,7 @@ export function PhotoUploadFlow({
       setUploadId(result.id);
       setPreviewUrl(`${result.previewUrl}?t=${Date.now()}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
+      setError(err instanceof Error ? err.message : "Не удалось загрузить фото");
       setPreviewUrl(null);
       setUploadId(null);
     } finally {

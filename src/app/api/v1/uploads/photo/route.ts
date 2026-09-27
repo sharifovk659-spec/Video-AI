@@ -3,11 +3,14 @@ import { requireSession } from "@/lib/auth/session";
 import { getEnv } from "@/lib/config/env";
 import { handleApiError } from "@/lib/errors/handle-api-error";
 import { prisma } from "@/lib/db/prisma";
-import { getStorageAdapter } from "@/lib/storage/storage-adapter";
 import { uploadExpiryDate } from "@/lib/storage/cleanup";
 import { validatePhotoUpload } from "@/lib/uploads/validate-photo";
+import { storeUserPhoto } from "@/lib/uploads/user-photo-storage";
 
 export const dynamic = "force-dynamic";
+
+/** Vercel serverless body limit — keep below platform max. */
+export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,17 +33,20 @@ export async function POST(request: NextRequest) {
       getEnv().UPLOAD_MAX_BYTES,
     );
 
-    const storage = getStorageAdapter();
-    const stored = await storage.put("user_uploads", buffer, {
-      contentType: validated.mimeType,
-      extension: validated.extension,
-      scopeId: session.userId,
-    });
+    const stored = await storeUserPhoto(
+      session.userId,
+      buffer,
+      validated.mimeType,
+      validated.extension,
+    );
 
     const record = await prisma.userPhotoUpload.create({
       data: {
         userId: session.userId,
-        storageKey: stored.key,
+        storageKey: stored.storageKey,
+        dataBytes: stored.dataBytes
+          ? new Uint8Array(stored.dataBytes)
+          : null,
         originalFileName: file.name.slice(0, 255),
         mimeType: validated.mimeType,
         sizeBytes: stored.sizeBytes,

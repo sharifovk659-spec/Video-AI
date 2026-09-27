@@ -3,7 +3,10 @@ import { requireSession } from "@/lib/auth/session";
 import { handleApiError } from "@/lib/errors/handle-api-error";
 import { assertFound } from "@/lib/errors/handle-api-error";
 import { prisma } from "@/lib/db/prisma";
-import { getStorageAdapter } from "@/lib/storage/storage-adapter";
+import {
+  deleteUserPhotoStorage,
+  readUserPhotoBytes,
+} from "@/lib/uploads/user-photo-storage";
 
 export const dynamic = "force-dynamic";
 
@@ -21,8 +24,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
       "Upload not found",
     );
 
-    const storage = getStorageAdapter();
-    const body = await storage.readObject(upload.storageKey);
+    const body = await readUserPhotoBytes(upload);
 
     return new NextResponse(new Uint8Array(body), {
       headers: {
@@ -47,8 +49,7 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
       "Upload not found",
     );
 
-    const storage = getStorageAdapter();
-    await storage.deleteObject(upload.storageKey);
+    await deleteUserPhotoStorage(upload);
     await prisma.userPhotoUpload.delete({ where: { id: upload.id } });
 
     return NextResponse.json({ ok: true });

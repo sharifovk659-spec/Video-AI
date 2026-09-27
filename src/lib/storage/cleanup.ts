@@ -1,13 +1,14 @@
 import { prisma } from "@/lib/db/prisma";
 import { getEnv } from "@/lib/config/env";
 import { getStorageAdapter } from "@/lib/storage/storage-adapter";
+import { deleteUserPhotoStorage } from "@/lib/uploads/user-photo-storage";
 import { createLogger } from "@/lib/logger";
 
 const log = createLogger("storage-cleanup");
 
 /**
  * Deletes expired temporary uploads that were never used by a generation.
- * Binary objects leave object storage; DB never held video blobs.
+ * Removes disk objects and/or inline DB bytes for expired uploads.
  */
 export async function cleanupExpiredUploads(limit = 50): Promise<number> {
   const now = new Date();
@@ -22,10 +23,12 @@ export async function cleanupExpiredUploads(limit = 50): Promise<number> {
 
   if (expired.length === 0) return 0;
 
-  const storage = getStorageAdapter();
   let deleted = 0;
   for (const row of expired) {
-    await storage.deleteObject(row.storageKey);
+    const full = await prisma.userPhotoUpload.findUnique({
+      where: { id: row.id },
+    });
+    if (full) await deleteUserPhotoStorage(full);
     await prisma.userPhotoUpload
       .delete({ where: { id: row.id } })
       .catch(() => undefined);

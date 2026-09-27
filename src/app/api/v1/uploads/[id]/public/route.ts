@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { handleApiError, assertFound } from "@/lib/errors/handle-api-error";
 import { prisma } from "@/lib/db/prisma";
-import { getStorageAdapter } from "@/lib/storage/storage-adapter";
 import { verifyUploadAccessToken } from "@/lib/uploads/signed-access";
+import { readUserPhotoBytes } from "@/lib/uploads/user-photo-storage";
 
 export const dynamic = "force-dynamic";
 
@@ -14,11 +14,17 @@ export async function GET(request: NextRequest, { params }: Params) {
     const { id } = await params;
     const token = request.nextUrl.searchParams.get("token");
     if (!token) {
-      return NextResponse.json({ error: { code: "UNAUTHORIZED", message: "Missing token" } }, { status: 401 });
+      return NextResponse.json(
+        { error: { code: "UNAUTHORIZED", message: "Missing token" } },
+        { status: 401 },
+      );
     }
     const verified = verifyUploadAccessToken(token);
     if (!verified || verified.uploadId !== id) {
-      return NextResponse.json({ error: { code: "UNAUTHORIZED", message: "Invalid token" } }, { status: 401 });
+      return NextResponse.json(
+        { error: { code: "UNAUTHORIZED", message: "Invalid token" } },
+        { status: 401 },
+      );
     }
 
     const upload = assertFound(
@@ -27,7 +33,7 @@ export async function GET(request: NextRequest, { params }: Params) {
       }),
     );
 
-    const body = await getStorageAdapter().readObject(upload.storageKey);
+    const body = await readUserPhotoBytes(upload);
     return new NextResponse(new Uint8Array(body), {
       headers: {
         "Content-Type": upload.mimeType,
