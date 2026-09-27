@@ -14,7 +14,7 @@ export function MiniAppAuthGate({ children }: { children: ReactNode }) {
         <SkeletonBlock className="h-28 w-full" />
         <SkeletonBlock className="h-48 w-full" />
         <p className="text-center text-xs text-zinc-500">
-          Signing in with Telegram…
+          Входим через Telegram…
         </p>
       </div>
     );
@@ -24,16 +24,16 @@ export function MiniAppAuthGate({ children }: { children: ReactNode }) {
     return (
       <div className="px-4 pb-28 pt-10">
         <ErrorState
-          title={outsideTelegram ? "Open inside Telegram" : "Sign-in failed"}
+          title={outsideTelegram ? "Откройте в Telegram" : "Не удалось войти"}
           message={
             error ??
-            "Could not authenticate. Open Vidoo AI from the Telegram bot button."
+            "Не получилось авторизоваться. Откройте Vidoo AI кнопкой в боте."
           }
           onRetry={outsideTelegram ? undefined : () => void refresh()}
         />
         {outsideTelegram ? (
           <p className="mt-4 text-center text-xs text-zinc-500">
-            In Telegram, open the bot and tap «Открыть Vidoo AI».
+            В Telegram откройте бота и нажмите «Открыть Vidoo AI».
           </p>
         ) : null}
       </div>

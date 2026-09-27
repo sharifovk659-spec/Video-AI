@@ -68,7 +68,7 @@ export function LazyMedia({
         />
       ) : (
         <div className="flex h-full items-center justify-center bg-gradient-to-br from-violet-900/40 to-fuchsia-900/20 text-xs text-zinc-500">
-          Preview
+          Превью
         </div>
       )}
     </div>

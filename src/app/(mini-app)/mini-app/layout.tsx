@@ -7,7 +7,7 @@ import { TelegramWebAppBootstrap } from "@/components/mini-app/telegram-webapp-b
 
 export const metadata: Metadata = {
   title: "Vidoo AI",
-  description: "AI video templates in Telegram",
+  description: "AI-видео в Telegram",
 };
 
 export const viewport: Viewport = {
@@ -15,6 +15,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: "cover",
   themeColor: "#050508",
 };
 
@@ -34,7 +35,9 @@ export default function MiniAppLayout({
         <MiniAppAuthProvider>
           <TelegramWebAppBootstrap />
           <MiniAppAuthGate>
-            <div className="mx-auto min-h-dvh w-full max-w-lg">{children}</div>
+            <div className="page-shell min-h-dvh pt-[env(safe-area-inset-top)]">
+              {children}
+            </div>
             <BottomNav />
           </MiniAppAuthGate>
         </MiniAppAuthProvider>

@@ -26,7 +26,7 @@ export function HomeScreen() {
       const res = await fetchHomeSections();
       setSections(res.data.sections);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load home");
+      setError(err instanceof Error ? err.message : "Не удалось загрузить главную");
     } finally {
       setLoading(false);
     }
@@ -59,7 +59,7 @@ export function HomeScreen() {
   const visibleSections = useMemo(() => sections, [sections]);
 
   return (
-    <div className="space-y-6 pb-28 pt-4">
+    <div className="space-y-6 pt-4">
       <header className="space-y-4 px-4">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -67,14 +67,12 @@ export function HomeScreen() {
               Vidoo AI
             </p>
             <h1 className="bg-gradient-to-r from-violet-200 via-fuchsia-200 to-violet-100 bg-clip-text text-2xl font-semibold text-transparent">
-              {user?.firstName
-                ? `Hi, ${user.firstName}`
-                : "Cinematic AI Videos"}
+              {user?.firstName ? `Привет, ${user.firstName}` : "Кино из фото"}
             </h1>
             {user ? (
               <p className="mt-1 text-xs text-zinc-400">
-                {user.freeGenerationsRemaining ?? 0} free · {user.creditBalance}{" "}
-                credits
+                {user.freeGenerationsRemaining ?? 0} бесплатно ·{" "}
+                {user.creditBalance} кр.
               </p>
             ) : null}
           </div>
@@ -83,19 +81,19 @@ export function HomeScreen() {
         <div className="vidoo-glass relative overflow-hidden rounded-2xl p-4 vidoo-glow">
           <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-fuchsia-500/20 blur-2xl" />
           <p className="relative text-sm font-medium text-violet-50">
-            Premium templates. Telegram-native. Ready when you are.
+            Премиум-стили. Прямо в Telegram. Готово за минуты.
           </p>
           <Link
             href="/mini-app/templates"
             className="relative mt-3 inline-flex rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-xs font-semibold text-white"
           >
-            Explore templates
+            Смотреть стили
           </Link>
         </div>
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search templates…"
+          placeholder="Поиск стилей…"
           className="vidoo-glass w-full rounded-xl border border-violet-500/20 px-4 py-3 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-violet-400/50"
         />
       </header>
@@ -116,15 +114,15 @@ export function HomeScreen() {
       ) : search.trim() ? (
         <section className="px-4">
           <h2 className="mb-3 text-sm font-semibold text-violet-100">
-            Search results
+            Результаты поиска
           </h2>
           {searchResults.length === 0 ? (
             <EmptyState
-              title="No templates found"
-              description="Try another keyword or browse categories."
+              title="Ничего не найдено"
+              description="Попробуйте другой запрос или откройте каталог."
             />
           ) : (
-            <div className="flex gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="app-scroll-x flex gap-3 pb-2">
               {searchResults.map((t) => (
                 <TemplateCard key={t.id} template={t} />
               ))}
@@ -142,18 +140,18 @@ export function HomeScreen() {
                 href={`/mini-app/templates?section=${section.key}`}
                 className="text-xs text-violet-300/80"
               >
-                See all
+                Все
               </Link>
             </div>
             {section.templates.length === 0 ? (
               <div className="px-4">
                 <EmptyState
-                  title="No templates yet"
-                  description="Check back soon — new drops are on the way."
+                  title="Пока пусто"
+                  description="Скоро появятся новые стили."
                 />
               </div>
             ) : (
-              <div className="flex gap-3 overflow-x-auto px-4 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="app-scroll-x flex gap-3 px-4 pb-2">
                 {section.templates.map((t) => (
                   <TemplateCard key={t.id} template={t} />
                 ))}

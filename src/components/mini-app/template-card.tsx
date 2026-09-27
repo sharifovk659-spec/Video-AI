@@ -10,46 +10,57 @@ function Badge({
   tone: "new" | "trend" | "pro" | "popular";
 }) {
   const styles = {
-    new: "bg-emerald-500/20 text-emerald-200 border-emerald-400/30",
-    trend: "bg-orange-500/20 text-orange-200 border-orange-400/30",
-    pro: "bg-violet-500/30 text-violet-100 border-violet-300/40",
-    popular: "bg-sky-500/20 text-sky-100 border-sky-400/30",
+    new: "bg-emerald-500/25 text-emerald-100 border-emerald-300/30",
+    trend: "bg-orange-500/25 text-orange-100 border-orange-300/30",
+    pro: "bg-violet-500/40 text-violet-50 border-violet-200/40",
+    popular: "bg-fuchsia-500/25 text-fuchsia-100 border-fuchsia-300/30",
   }[tone];
 
   return (
     <span
-      className={`rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${styles}`}
+      className={`rounded-full border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide ${styles}`}
     >
       {label}
     </span>
   );
 }
 
-export function TemplateCard({ template }: { template: PublicTemplateListItem }) {
+export function TemplateCard({
+  template,
+  layout = "rail",
+}: {
+  template: PublicTemplateListItem;
+  layout?: "rail" | "grid";
+}) {
+  const width =
+    layout === "grid"
+      ? "w-full"
+      : "w-[42vw] max-w-[168px] shrink-0 sm:w-[168px]";
+
   return (
     <Link
       href={`/mini-app/templates/${template.slug}`}
-      className="group vidoo-glass vidoo-glow block w-[148px] max-w-full shrink-0 overflow-hidden rounded-2xl transition-transform active:scale-[0.98] sm:w-full"
+      className={`group vidoo-glass block min-w-0 overflow-hidden rounded-2xl transition-transform duration-200 active:scale-[0.98] ${width}`}
     >
-      <div className="relative aspect-[3/4] overflow-hidden bg-zinc-900">
+      <div className="relative aspect-[3/4] overflow-hidden bg-zinc-950">
         <LazyMedia
           coverUrl={template.coverUrl ?? template.thumbnailUrl}
           videoUrl={template.previewVideoUrl}
           alt={template.title}
           className="absolute inset-0 h-full w-full"
         />
-        <div className="absolute left-2 top-2 flex flex-wrap gap-1">
-          {template.isNew ? <Badge label="NEW" tone="new" /> : null}
-          {template.isTrending ? <Badge label="TREND" tone="trend" /> : null}
-          {template.isPopular ? <Badge label="HOT" tone="popular" /> : null}
-          {template.isPro ? <Badge label="PRO" tone="pro" /> : null}
+        <div className="absolute left-2 top-2 flex max-w-[70%] flex-wrap gap-1">
+          {template.isNew ? <Badge label="Новое" tone="new" /> : null}
+          {template.isTrending ? <Badge label="Тренд" tone="trend" /> : null}
+          {template.isPopular ? <Badge label="Хит" tone="popular" /> : null}
+          {template.isPro ? <Badge label="Pro" tone="pro" /> : null}
         </div>
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-2 pt-8">
-          <p className="line-clamp-2 text-xs font-semibold text-white">
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/70 to-transparent p-2.5 pt-10">
+          <p className="line-clamp-2 break-words text-[13px] font-semibold leading-tight text-white">
             {template.title}
           </p>
-          <p className="mt-0.5 text-[10px] text-violet-200/80">
-            {template.creditCost} credits
+          <p className="mt-1 truncate text-[10px] text-violet-200/90">
+            {template.durationSeconds ?? 8} сек · {template.creditCost} кр.
           </p>
         </div>
       </div>

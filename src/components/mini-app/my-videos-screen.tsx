@@ -10,10 +10,10 @@ import { fetchMyGenerations } from "@/lib/mini-app/client-api";
 type FilterKey = "all" | "processing" | "ready" | "failed";
 
 const FILTERS: Array<{ key: FilterKey; label: string }> = [
-  { key: "all", label: "All" },
-  { key: "processing", label: "Processing" },
-  { key: "ready", label: "Ready" },
-  { key: "failed", label: "Failed" },
+  { key: "all", label: "Все" },
+  { key: "processing", label: "В работе" },
+  { key: "ready", label: "Готово" },
+  { key: "failed", label: "Ошибка" },
 ];
 
 function statusTone(status: string) {
@@ -23,10 +23,10 @@ function statusTone(status: string) {
 }
 
 function statusLabel(status: string) {
-  if (status === "completed") return "Ready";
-  if (status === "queued" || status === "processing") return "Processing";
-  if (status === "failed") return "Failed";
-  if (status === "cancelled") return "Cancelled";
+  if (status === "completed") return "Готово";
+  if (status === "queued" || status === "processing") return "В работе";
+  if (status === "failed") return "Ошибка";
+  if (status === "cancelled") return "Отменено";
   return status;
 }
 
@@ -42,7 +42,7 @@ async function shareVideo(item: GenerationListItem) {
     try {
       await navigator.share({
         title: item.template.title,
-        text: `Check out my Vidoo AI video: ${item.template.title}`,
+        text: `Моё видео Vidoo AI: ${item.template.title}`,
         url,
       });
       return;
@@ -117,13 +117,13 @@ export function MyVideosScreen() {
   }, [loadPage, loading, loadingMore, page, totalPages]);
 
   return (
-    <div className="space-y-4 px-4 pb-28 pt-4">
+    <div className="space-y-4 px-4 pt-4">
       <header>
-        <h1 className="text-xl font-semibold text-white">My Videos</h1>
-        <p className="text-xs text-zinc-400">Your private generation history</p>
+        <h1 className="text-xl font-semibold text-white">Мои видео</h1>
+        <p className="text-xs text-zinc-400">История ваших генераций</p>
       </header>
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="app-scroll-x flex gap-2 pb-1">
         {FILTERS.map((f) => (
           <button
             key={f.key}
@@ -149,8 +149,8 @@ export function MyVideosScreen() {
         <ErrorState message={error} onRetry={() => void loadPage(1, true)} />
       ) : items.length === 0 ? (
         <EmptyState
-          title="No videos yet"
-          description="Create your first AI video from a template or AI Studio."
+          title="Видео пока нет"
+          description="Создайте первое видео из стиля или AI Студии."
         />
       ) : (
         <ul className="space-y-3">
@@ -206,8 +206,8 @@ export function MyVideosScreen() {
                           ? `${item.durationSeconds}s`
                           : "—"}
                       </span>
-                      <span>{item.creditsCharged} credits</span>
-                      {item.isStudio ? <span>Studio</span> : null}
+                      <span>{item.creditsCharged} кр.</span>
+                      {item.isStudio ? <span>Студия</span> : null}
                     </div>
                   </div>
                 </div>
@@ -218,21 +218,21 @@ export function MyVideosScreen() {
                       href={`/mini-app/generations/${item.id}`}
                       className="bg-[#0d0915] py-2.5 text-center text-violet-200"
                     >
-                      Play
+                      Смотреть
                     </Link>
                     <a
                       href={item.outputUrl!}
                       download
                       className="bg-[#0d0915] py-2.5 text-center text-violet-200"
                     >
-                      Download
+                      Скачать
                     </a>
                     <button
                       type="button"
                       className="bg-[#0d0915] py-2.5 text-violet-200"
                       onClick={() => void shareVideo(item)}
                     >
-                      Share
+                      Поделиться
                     </button>
                     <button
                       type="button"
@@ -245,7 +245,7 @@ export function MyVideosScreen() {
                         }
                       }}
                     >
-                      Again
+                      Ещё раз
                     </button>
                   </div>
                 ) : (
@@ -254,7 +254,7 @@ export function MyVideosScreen() {
                       href={`/mini-app/generations/${item.id}`}
                       className="text-xs text-violet-300"
                     >
-                      View status →
+                      Статус →
                     </Link>
                   </div>
                 )}
@@ -266,7 +266,7 @@ export function MyVideosScreen() {
 
       <div ref={sentinelRef} className="h-4" />
       {loadingMore ? (
-        <p className="text-center text-xs text-zinc-500">Loading more…</p>
+        <p className="text-center text-xs text-zinc-500">Загрузка…</p>
       ) : null}
     </div>
   );

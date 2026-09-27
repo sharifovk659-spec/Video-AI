@@ -19,9 +19,34 @@
   --font-mono: var(--font-geist-mono);
 }
 
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 body {
   background: var(--vidoo-bg);
   color: var(--vidoo-text);
+}
+
+.app-scroll-x {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.app-scroll-x::-webkit-scrollbar {
+  display: none;
+}
+
+.page-shell {
+  width: 100%;
+  max-width: 32rem;
+  margin-inline: auto;
+  min-width: 0;
+  padding-bottom: calc(5.75rem + env(safe-area-inset-bottom));
 }
 
 .vidoo-gradient-bg {

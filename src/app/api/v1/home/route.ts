@@ -11,18 +11,18 @@ const HOME_CACHE_KEY = "public:home:sections";
 const HOME_CACHE_TTL_MS = 45_000;
 
 const SECTIONS = [
-  { key: "trending", title: "Trending", filter: { isTrending: true } },
-  { key: "new", title: "New", filter: { isNew: true } },
-  { key: "popular", title: "Popular", filter: { isPopular: true } },
+  { key: "trending", title: "В тренде", filter: { isTrending: true } },
+  { key: "new", title: "Новые", filter: { isNew: true } },
+  { key: "popular", title: "Популярные", filter: { isPopular: true } },
   { key: "pro", title: "Pro", filter: { isPro: true } },
-  { key: "animals", title: "Animals", filter: { categorySlug: "animals" } },
-  { key: "cinematic", title: "Cinematic", filter: { categorySlug: "cinematic" } },
+  { key: "animals", title: "Животные", filter: { categorySlug: "animals" } },
+  { key: "cinematic", title: "Кино", filter: { categorySlug: "cinematic" } },
   {
     key: "transformation",
-    title: "Transformation",
+    title: "Трансформация",
     filter: { categorySlug: "transformation" },
   },
-  { key: "fun", title: "Fun", filter: { categorySlug: "fun" } },
+  { key: "fun", title: "Веселье", filter: { categorySlug: "fun" } },
 ] as const;
 
 async function fetchSectionTemplates(

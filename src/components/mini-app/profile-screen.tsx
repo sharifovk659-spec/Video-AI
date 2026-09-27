@@ -8,23 +8,23 @@ import { ErrorState, SkeletonBlock } from "@/components/mini-app/states";
 import { logoutMiniApp } from "@/lib/mini-app/client-api";
 
 const LINKS: Array<{ href: string; label: string; tone?: "danger" }> = [
-  { href: "/mini-app/videos", label: "My Videos" },
-  { href: "/mini-app/templates?favorites=1", label: "Favorite Templates" },
-  { href: "/mini-app/pricing", label: "Buy Credits" },
-  { href: "/mini-app/studio", label: "AI Studio" },
-  { href: "/mini-app/settings", label: "Settings" },
-  { href: "/mini-app/help", label: "Help" },
-  { href: "/mini-app/privacy", label: "Privacy" },
-  { href: "/mini-app/terms", label: "Terms" },
-  { href: "/mini-app/ai-disclosure", label: "AI disclosure" },
+  { href: "/mini-app/videos", label: "Мои видео" },
+  { href: "/mini-app/templates?favorites=1", label: "Избранные стили" },
+  { href: "/mini-app/pricing", label: "Купить кредиты" },
+  { href: "/mini-app/studio", label: "AI Студия" },
+  { href: "/mini-app/settings", label: "Настройки" },
+  { href: "/mini-app/help", label: "Помощь" },
+  { href: "/mini-app/privacy", label: "Конфиденциальность" },
+  { href: "/mini-app/terms", label: "Условия" },
+  { href: "/mini-app/ai-disclosure", label: "Про AI" },
 ];
 
 function planLabel(plan?: string) {
   switch (plan) {
     case "credits":
-      return "Credits";
+      return "Кредиты";
     case "free":
-      return "Free";
+      return "Бесплатный";
     default:
       return plan ? plan.replace(/_/g, " ") : "Free";
   }
@@ -48,7 +48,7 @@ export function ProfileScreen() {
     return (
       <div className="p-4 pb-28">
         <ErrorState
-          message={error ?? "Sign in via Telegram"}
+          message={error ?? "Войдите через Telegram"}
           onRetry={() => void refresh()}
         />
       </div>
@@ -57,7 +57,7 @@ export function ProfileScreen() {
 
   const name =
     [user.firstName, user.lastName].filter(Boolean).join(" ") ||
-    "Telegram user";
+    "Пользователь Telegram";
   const initial = (user.firstName?.[0] ?? user.username?.[0] ?? "V").toUpperCase();
 
   const onLogout = async () => {
@@ -72,10 +72,10 @@ export function ProfileScreen() {
   };
 
   return (
-    <div className="space-y-5 px-4 pb-28 pt-4">
+    <div className="space-y-5 px-4 pt-4">
       <header>
-        <h1 className="text-xl font-semibold text-white">Profile</h1>
-        <p className="text-xs text-zinc-400">Your Vidoo AI account</p>
+        <h1 className="text-xl font-semibold text-white">Профиль</h1>
+        <p className="text-xs text-zinc-400">Ваш аккаунт Vidoo AI</p>
       </header>
 
       <div className="vidoo-glass vidoo-glow flex items-center gap-4 rounded-2xl p-4">
@@ -94,7 +94,7 @@ export function ProfileScreen() {
         <div className="min-w-0">
           <p className="truncate text-lg font-semibold text-violet-50">{name}</p>
           <p className="text-sm text-zinc-400">
-            {user.username ? `@${user.username}` : "No username"}
+            {user.username ? `@${user.username}` : "Без username"}
           </p>
           <p className="mt-1 inline-flex rounded-md border border-violet-400/30 bg-violet-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-200">
             {planLabel(user.plan)}
@@ -105,7 +105,7 @@ export function ProfileScreen() {
       <div className="grid grid-cols-3 gap-2">
         <div className="vidoo-glass rounded-2xl p-3 text-center">
           <p className="text-[10px] uppercase tracking-wide text-zinc-500">
-            Credits
+            Кредиты
           </p>
           <p className="mt-1 text-xl font-semibold text-white">
             {user.creditBalance}
@@ -113,7 +113,7 @@ export function ProfileScreen() {
         </div>
         <div className="vidoo-glass rounded-2xl p-3 text-center">
           <p className="text-[10px] uppercase tracking-wide text-zinc-500">
-            Free left
+            Бесплатно
           </p>
           <p className="mt-1 text-xl font-semibold text-white">
             {user.freeGenerationsRemaining ?? 0}
@@ -121,7 +121,7 @@ export function ProfileScreen() {
         </div>
         <div className="vidoo-glass rounded-2xl p-3 text-center">
           <p className="text-[10px] uppercase tracking-wide text-zinc-500">
-            Videos
+            Видео
           </p>
           <p className="mt-1 text-xl font-semibold text-white">
             {user.videosGenerated ?? 0}
@@ -148,7 +148,7 @@ export function ProfileScreen() {
           onClick={() => void onLogout()}
           className="flex w-full items-center justify-between border-t border-white/5 px-4 py-3.5 text-left text-sm text-rose-300 transition hover:bg-white/5 disabled:opacity-60"
         >
-          <span>{loggingOut ? "Signing out…" : "Logout"}</span>
+          <span>{loggingOut ? "Выход…" : "Выйти"}</span>
           <span className="text-rose-500/60">›</span>
         </button>
       </nav>
@@ -158,7 +158,7 @@ export function ProfileScreen() {
           href="/admin"
           className="flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-3 text-sm font-semibold text-white vidoo-glow"
         >
-          Admin Panel
+          Панель администратора
         </Link>
       ) : null}
     </div>

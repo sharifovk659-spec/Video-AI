@@ -5,30 +5,30 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
 const NAV = [
-  { href: "/admin", label: "Dashboard" },
-  { href: "/admin/analytics", label: "Analytics" },
-  { href: "/admin/templates", label: "Templates" },
-  { href: "/admin/categories", label: "Categories" },
-  { href: "/admin/generations", label: "Generations" },
-  { href: "/admin/users", label: "Users" },
-  { href: "/admin/payments", label: "Payments" },
-  { href: "/admin/packages", label: "Packages" },
-  { href: "/admin/ai-models", label: "AI Models" },
-  { href: "/admin/settings", label: "Settings" },
+  { href: "/admin", label: "Обзор" },
+  { href: "/admin/analytics", label: "Аналитика" },
+  { href: "/admin/templates", label: "Стили" },
+  { href: "/admin/categories", label: "Категории" },
+  { href: "/admin/generations", label: "Генерации" },
+  { href: "/admin/users", label: "Пользователи" },
+  { href: "/admin/payments", label: "Платежи" },
+  { href: "/admin/packages", label: "Пакеты" },
+  { href: "/admin/ai-models", label: "AI модели" },
+  { href: "/admin/settings", label: "Настройки" },
 ] as const;
 
 export function AdminShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <div className="min-h-dvh bg-zinc-100 text-zinc-900 lg:flex dark:bg-zinc-950 dark:text-zinc-50">
-      <aside className="border-b border-zinc-200 bg-white px-4 py-4 lg:w-64 lg:border-b-0 lg:border-r dark:border-zinc-800 dark:bg-zinc-900">
-        <p className="text-xs font-semibold uppercase tracking-widest text-violet-600">
+    <div className="min-h-dvh bg-[#050508] text-zinc-50 lg:flex">
+      <aside className="border-b border-white/10 bg-[#0c0a12] px-4 py-4 lg:w-64 lg:border-b-0 lg:border-r">
+        <p className="text-xs font-semibold uppercase tracking-widest text-violet-400">
           Vidoo Admin
         </p>
         <Link
           href="/mini-app"
-          className="mt-2 inline-block text-xs text-zinc-500 hover:text-violet-600"
+          className="mt-2 inline-block text-xs text-zinc-500 hover:text-violet-300"
         >
           ← Mini App
         </Link>
@@ -45,7 +45,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 className={`whitespace-nowrap rounded-lg px-3 py-2 text-sm ${
                   active
                     ? "bg-violet-600 text-white"
-                    : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                    : "text-zinc-400 hover:bg-white/5"
                 }`}
               >
                 {item.label}

@@ -18,7 +18,7 @@ export function EmptyState({
 }
 
 export function ErrorState({
-  title = "Something went wrong",
+  title = "Что-то пошло не так",
   message,
   onRetry,
 }: {
@@ -36,7 +36,7 @@ export function ErrorState({
           onClick={onRetry}
           className="mt-4 rounded-xl bg-violet-600 px-4 py-2 text-xs font-medium text-white"
         >
-          Retry
+          Повторить
         </button>
       ) : null}
     </div>

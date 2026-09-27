@@ -16,11 +16,11 @@ const DISCOVERY_CHIPS: Array<{
   label: string;
   params: Record<string, string>;
 }> = [
-  { key: "all", label: "All", params: {} },
-  { key: "favorites", label: "Favorites", params: { favorites: "1" } },
-  { key: "trending", label: "Trending", params: { trending: "1" } },
-  { key: "new", label: "New", params: { new: "1" } },
-  { key: "popular", label: "Popular", params: { popular: "1" } },
+  { key: "all", label: "Все", params: {} },
+  { key: "favorites", label: "Избранное", params: { favorites: "1" } },
+  { key: "trending", label: "Тренд", params: { trending: "1" } },
+  { key: "new", label: "Новые", params: { new: "1" } },
+  { key: "popular", label: "Хиты", params: { popular: "1" } },
   { key: "pro", label: "Pro", params: { pro: "1" } },
 ];
 
@@ -103,7 +103,7 @@ export function TemplatesScreen() {
         setPage(res.meta.page);
         setTotalPages(res.meta.totalPages);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load templates");
+        setError(err instanceof Error ? err.message : "Не удалось загрузить стили");
       } finally {
         setLoading(false);
         setLoadingMore(false);
@@ -149,22 +149,22 @@ export function TemplatesScreen() {
   };
 
   return (
-    <div className="space-y-4 px-4 pb-28 pt-4">
+    <div className="space-y-4 px-4 pt-4">
       <header>
-        <h1 className="text-xl font-semibold text-white">Templates</h1>
+        <h1 className="text-xl font-semibold text-white">Стили</h1>
         <p className="text-xs text-zinc-400">
-          Discover, search, and favorite styles
+          Выберите стиль, загрузите фото и создайте видео
         </p>
       </header>
 
       <input
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search name or description…"
-        className="vidoo-glass w-full rounded-xl px-4 py-3 text-sm outline-none placeholder:text-zinc-600"
+        placeholder="Поиск по названию…"
+        className="vidoo-glass w-full min-w-0 rounded-xl px-4 py-3 text-sm outline-none placeholder:text-zinc-600"
       />
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="app-scroll-x flex gap-2 pb-1">
         {DISCOVERY_CHIPS.map((c) => (
           <button
             key={c.key}
@@ -182,7 +182,7 @@ export function TemplatesScreen() {
       </div>
 
       {!debouncedSearch && chip === "all" ? (
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div className="app-scroll-x flex gap-2 pb-1">
           <button
             type="button"
             onClick={() => setCategory("")}
@@ -190,7 +190,7 @@ export function TemplatesScreen() {
               !category ? "bg-white/10 text-white" : "text-zinc-500"
             }`}
           >
-            All categories
+            Все категории
           </button>
           {categories.map((c) => (
             <button
@@ -217,18 +217,18 @@ export function TemplatesScreen() {
         <ErrorState message={error} onRetry={() => void load(1, true)} />
       ) : items.length === 0 ? (
         <EmptyState
-          title="No templates"
-          description="Try another filter or search."
+          title="Стилей нет"
+          description="Смените фильтр или поисковый запрос."
         />
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {items.map((t) => (
               <div key={t.id} className="relative min-w-0">
-                <TemplateCard template={t} />
+                <TemplateCard template={t} layout="grid" />
                 <button
                   type="button"
-                  aria-label={t.isFavorite ? "Remove favorite" : "Add favorite"}
+                  aria-label={t.isFavorite ? "Убрать из избранного" : "В избранное"}
                   onClick={() => void onFavorite(t)}
                   className={`absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full border backdrop-blur ${
                     t.isFavorite
@@ -248,7 +248,7 @@ export function TemplatesScreen() {
               onClick={() => void load(page + 1, false)}
               className="vidoo-glass mx-auto block w-full rounded-xl py-3 text-sm text-violet-200"
             >
-              {loadingMore ? "Loading…" : "Load more"}
+              {loadingMore ? "Загрузка…" : "Ещё"}
             </button>
           ) : null}
         </>

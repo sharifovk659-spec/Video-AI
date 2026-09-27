@@ -14,9 +14,9 @@ export function CreditPill() {
       className="vidoo-glass inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium text-violet-100"
     >
       <span className="h-2 w-2 rounded-full bg-gradient-to-r from-violet-400 to-fuchsia-400" />
-      {loading ? "…" : `${credits} credits`}
+      {loading ? "…" : `${credits} кр.`}
       {!loading && freeLeft > 0 ? (
-        <span className="text-[10px] text-emerald-300">· {freeLeft} free</span>
+        <span className="text-[10px] text-emerald-300">· {freeLeft} беспл.</span>
       ) : null}
     </Link>
   );
