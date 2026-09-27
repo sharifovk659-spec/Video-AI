@@ -203,7 +203,7 @@ export async function createStudioGeneration(params: {
       where: { id: created.id },
       include: { job: true, template: { select: { slug: true, title: true } } },
     });
-  });
+  }, { maxWait: 15_000, timeout: 20_000 });
 
   log.info("Studio generation created", { generationId: generation.id });
   void kickGenerationWorker();

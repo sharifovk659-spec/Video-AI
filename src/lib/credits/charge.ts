@@ -5,16 +5,18 @@ import { assertFreeGenerationAllowed } from "@/lib/credits/anti-abuse";
 
 export const DEFAULT_FREE_GENERATIONS = 2;
 
-export async function getFreeGenerationsLimit(): Promise<number> {
-  const setting = await prisma.appSetting.findUnique({
+type Tx = Prisma.TransactionClient;
+
+export async function getFreeGenerationsLimit(
+  db: Tx | typeof prisma = prisma,
+): Promise<number> {
+  const setting = await db.appSetting.findUnique({
     where: { key: "free_generations_per_user" },
   });
   const value = setting?.value;
   if (typeof value === "number" && value >= 0) return value;
   return DEFAULT_FREE_GENERATIONS;
 }
-
-type Tx = Prisma.TransactionClient;
 
 async function ensureWallet(tx: Tx, userId: string) {
   const existing = await tx.creditWallet.findUnique({ where: { userId } });
@@ -34,7 +36,7 @@ export async function reserveForGeneration(
     creditCost: number;
   },
 ): Promise<{ creditsReserved: number; usedFreeQuota: boolean }> {
-  const freeLimit = await getFreeGenerationsLimit();
+  const freeLimit = await getFreeGenerationsLimit(tx);
   const user = await tx.user.findUniqueOrThrow({ where: { id: args.userId } });
 
   assertFreeGenerationAllowed(user);

@@ -169,7 +169,7 @@ export async function createGenerationForUser(params: CreateGenerationParams) {
       where: { id: created.id },
       include: { job: true, template: { select: { slug: true, title: true } } },
     });
-  });
+  }, { maxWait: 15_000, timeout: 20_000 });
 
   log.info("Generation created", {
     generationId: generation.id,
