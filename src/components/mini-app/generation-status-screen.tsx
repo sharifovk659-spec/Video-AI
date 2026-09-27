@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   fetchGeneration,
   retryGeneration,
 } from "@/lib/mini-app/client-api";
+import { generatedVideoPosterTime } from "@/lib/mini-app/result-video-time";
 import { ErrorState, SkeletonBlock } from "@/components/mini-app/states";
 
 type GenData = Awaited<ReturnType<typeof fetchGeneration>>["data"];
@@ -28,6 +29,75 @@ function stageLabel(stage: string | null, status: string) {
 
 const USER_FAIL = "Не удалось создать видео. Попробуйте ещё раз.";
 
+function ResultVideo({ src }: { src: string }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [frameReady, setFrameReady] = useState(false);
+  const [playing, setPlaying] = useState(false);
+
+  useEffect(() => {
+    setFrameReady(false);
+    setPlaying(false);
+    const timer = setTimeout(() => setFrameReady(true), 4000);
+    return () => clearTimeout(timer);
+  }, [src]);
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl bg-black">
+      <video
+        ref={videoRef}
+        src={src}
+        playsInline
+        preload="auto"
+        controls={playing}
+        className={`aspect-[9/16] w-full bg-black object-contain ${
+          frameReady ? "opacity-100" : "opacity-0"
+        }`}
+        onLoadedMetadata={(event) => {
+          const video = event.currentTarget;
+          if (!Number.isFinite(video.duration) || video.duration <= 0) return;
+          const at = generatedVideoPosterTime(video.duration);
+          if (at <= 0) {
+            setFrameReady(true);
+            return;
+          }
+          try {
+            video.currentTime = at;
+          } catch {
+            setFrameReady(true);
+          }
+        }}
+        onSeeked={() => setFrameReady(true)}
+        onError={() => setFrameReady(true)}
+      />
+      {!frameReady ? (
+        <div className="absolute inset-0 flex aspect-[9/16] flex-col items-center justify-center gap-3 bg-[#0c0914]">
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-violet-400/30 border-t-violet-300" />
+          <p className="text-xs text-zinc-400">Загрузка видео…</p>
+        </div>
+      ) : null}
+      {frameReady && !playing ? (
+        <button
+          type="button"
+          aria-label="Воспроизвести"
+          className="absolute inset-0 flex items-center justify-center"
+          onClick={() => {
+            const video = videoRef.current;
+            if (!video) return;
+            setPlaying(true);
+            void video.play();
+          }}
+        >
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/55 text-white ring-1 ring-white/40">
+            <svg viewBox="0 0 24 24" className="ml-1 h-8 w-8 fill-current" aria-hidden>
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </span>
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 export function GenerationStatusScreen({ id }: { id: string }) {
   const [data, setData] = useState<GenData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +117,8 @@ export function GenerationStatusScreen({ id }: { id: string }) {
         setError(null);
         if (
           res.data.status === "queued" ||
-          res.data.status === "processing"
+          res.data.status === "processing" ||
+          (res.data.status === "completed" && !res.data.outputUrl)
         ) {
           timer = setTimeout(() => void poll(), 2500);
         }
@@ -96,19 +167,27 @@ export function GenerationStatusScreen({ id }: { id: string }) {
 
   if (!data) return null;
 
-  if (data.status === "completed" && data.outputUrl) {
+  if (data.status === "completed" && !data.outputUrl) {
     return (
       <div className="space-y-4 px-4 pb-28 pt-4">
         <h1 className="text-xl font-semibold text-white">Готово</h1>
-        <video
-          src={data.outputUrl}
-          controls
-          playsInline
-          className="w-full rounded-2xl bg-black"
-        />
+        <div className="flex aspect-[9/16] flex-col items-center justify-center gap-3 rounded-2xl bg-[#0c0914]">
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-violet-400/30 border-t-violet-300" />
+          <p className="text-xs text-zinc-400">Видео ещё готовится</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (data.status === "completed" && data.outputUrl) {
+    const videoUrl = data.outputUrl;
+    return (
+      <div className="space-y-4 px-4 pb-28 pt-4">
+        <h1 className="text-xl font-semibold text-white">Готово</h1>
+        <ResultVideo src={videoUrl} />
         <div className="grid gap-2">
           <a
-            href={data.outputUrl}
+            href={videoUrl}
             download
             className="rounded-xl bg-violet-600 py-3 text-center text-sm font-semibold text-white"
           >
@@ -121,10 +200,10 @@ export function GenerationStatusScreen({ id }: { id: string }) {
               if (navigator.share) {
                 await navigator.share({
                   title: data.template.title,
-                  url: data.outputUrl!,
+                  url: videoUrl,
                 });
               } else {
-                await navigator.clipboard.writeText(data.outputUrl!);
+                await navigator.clipboard.writeText(videoUrl);
               }
             }}
           >
