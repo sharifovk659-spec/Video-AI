@@ -225,6 +225,36 @@ export function AdminTemplatesPage() {
     }
   };
 
+  const removeTemplate = async (id: string) => {
+    if (
+      !confirm(
+        "Удалить шаблон? Если по нему уже есть генерации, удаление не пройдёт — тогда выключите его.",
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/templates/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error?.message ?? "Delete failed");
+      if (editingId === id) {
+        setEditingId(null);
+        setForm(emptyForm);
+      }
+      setInfo("Шаблон удалён");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Delete failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const disableTemplate = async (id: string) => {
     if (!confirm("Disable this template immediately?")) return;
     setBusy(true);
@@ -319,9 +349,9 @@ export function AdminTemplatesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Templates</h1>
-        <p className="text-sm text-zinc-500">
-          Viral publish workflow — draft → media → prompt → test → publish
+        <h1 className="text-2xl font-semibold text-zinc-50">Шаблоны Kling</h1>
+        <p className="text-sm text-zinc-400">
+          Название, обложка, превью, скрытый промпт, модель Kling, длительность, кредиты, тренд/новое, активен.
         </p>
       </div>
 
@@ -330,12 +360,12 @@ export function AdminTemplatesPage() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search…"
-          className="rounded-lg border px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          className="rounded-lg border border-white/10 bg-[#12101a] px-3 py-2 text-sm text-zinc-100"
         />
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
-          className="rounded-lg border px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          className="rounded-lg border border-white/10 bg-[#12101a] px-3 py-2 text-sm text-zinc-100"
         >
           <option value="">All statuses</option>
           <option value="active">Active</option>
@@ -352,7 +382,7 @@ export function AdminTemplatesPage() {
             setTestGenerationId(null);
           }}
         >
-          Add Template
+          Добавить
         </button>
       </div>
 
@@ -360,19 +390,19 @@ export function AdminTemplatesPage() {
       {info ? <p className="text-sm text-emerald-600">{info}</p> : null}
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <div className="overflow-x-auto rounded-xl border dark:border-zinc-800">
+        <div className="overflow-x-auto rounded-xl border border-white/10">
           <table className="min-w-full text-left text-sm">
-            <thead className="bg-zinc-50 dark:bg-zinc-900">
+            <thead className="bg-white/5 text-zinc-300">
               <tr>
-                <th className="px-3 py-2">Name</th>
-                <th className="px-3 py-2">Status</th>
-                <th className="px-3 py-2">Ver</th>
+                <th className="px-3 py-2">Название</th>
+                <th className="px-3 py-2">Статус</th>
+                <th className="px-3 py-2">Версия</th>
                 <th className="px-3 py-2" />
               </tr>
             </thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={row.id} className="border-t dark:border-zinc-800">
+                <tr key={row.id} className="border-t border-white/10">
                   <td className="px-3 py-2">
                     <div className="font-medium">{row.title}</div>
                     <div className="text-xs text-zinc-500">
@@ -387,24 +417,31 @@ export function AdminTemplatesPage() {
                       className="text-violet-600"
                       onClick={() => void edit(row.id)}
                     >
-                      Edit
+                      Изменить
                     </button>
                     <button
                       type="button"
-                      className="text-zinc-500"
+                      className="text-zinc-400"
                       onClick={() => void duplicate(row.id)}
                     >
-                      Duplicate
+                      Копия
                     </button>
                     {row.status !== "archived" ? (
                       <button
                         type="button"
-                        className="text-rose-600"
+                        className="text-amber-400"
                         onClick={() => void disableTemplate(row.id)}
                       >
-                        Disable
+                        Выкл
                       </button>
                     ) : null}
+                    <button
+                      type="button"
+                      className="text-rose-400"
+                      onClick={() => void removeTemplate(row.id)}
+                    >
+                      Удалить
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -412,15 +449,15 @@ export function AdminTemplatesPage() {
           </table>
         </div>
 
-        <div className="space-y-3 rounded-xl border p-4 dark:border-zinc-800">
+        <div className="space-y-3 rounded-xl border p-4 border-white/10">
           <p className="font-medium">
-            {editingId ? "Edit template" : "New template"}
+            {editingId ? "Редактирование" : "Новый шаблон"}
           </p>
 
           <div className="grid gap-2 sm:grid-cols-2">
             {(
               [
-                ["name", "Name"],
+                ["name", "Название"],
                 ["slug", "Slug"],
               ] as const
             ).map(([key, label]) => (
@@ -429,7 +466,7 @@ export function AdminTemplatesPage() {
                 <input
                   value={form[key]}
                   onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                  className="mt-1 w-full rounded border px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                  className="mt-1 w-full rounded border border-white/10 bg-[#12101a] px-2 py-1.5 text-sm text-zinc-100"
                   required
                 />
               </label>
@@ -442,12 +479,12 @@ export function AdminTemplatesPage() {
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               rows={2}
-              className="mt-1 w-full rounded border px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+              className="mt-1 w-full rounded border border-white/10 bg-[#12101a] px-2 py-1.5 text-sm text-zinc-100"
             />
           </label>
 
-          <div className="rounded-lg border border-dashed p-3 dark:border-zinc-700">
-            <p className="mb-2 text-xs font-medium">Cover image</p>
+          <div className="rounded-lg border border-dashed p-3 border-white/15">
+            <p className="mb-2 text-xs font-medium">Обложка</p>
             {form.coverUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -472,12 +509,12 @@ export function AdminTemplatesPage() {
               className="rounded bg-zinc-800 px-3 py-1.5 text-xs text-white"
               onClick={() => coverInput.current?.click()}
             >
-              Upload cover
+              Загрузить обложку
             </button>
           </div>
 
-          <div className="rounded-lg border border-dashed p-3 dark:border-zinc-700">
-            <p className="mb-2 text-xs font-medium">Preview video</p>
+          <div className="rounded-lg border border-dashed p-3 border-white/15">
+            <p className="mb-2 text-xs font-medium">Превью-видео</p>
             {form.previewVideoUrl ? (
               <video
                 src={form.previewVideoUrl}
@@ -502,17 +539,17 @@ export function AdminTemplatesPage() {
               className="rounded bg-zinc-800 px-3 py-1.5 text-xs text-white"
               onClick={() => previewInput.current?.click()}
             >
-              Upload preview
+              Загрузить превью
             </button>
           </div>
 
           <label className="block text-xs">
-            Internal prompt
+            Скрытый Kling prompt
             <textarea
               value={form.prompt}
               onChange={(e) => setForm({ ...form, prompt: e.target.value })}
               rows={4}
-              className="mt-1 w-full rounded border px-2 py-1.5 font-mono text-sm dark:border-zinc-700 dark:bg-zinc-900"
+              className="mt-1 w-full rounded border border-white/10 bg-[#12101a] px-2 py-1.5 font-mono text-sm text-zinc-100"
               required
             />
           </label>
@@ -524,7 +561,7 @@ export function AdminTemplatesPage() {
                 setForm({ ...form, negativePrompt: e.target.value })
               }
               rows={2}
-              className="mt-1 w-full rounded border px-2 py-1.5 font-mono text-sm dark:border-zinc-700 dark:bg-zinc-900"
+              className="mt-1 w-full rounded border border-white/10 bg-[#12101a] px-2 py-1.5 font-mono text-sm text-zinc-100"
             />
           </label>
 
@@ -536,7 +573,7 @@ export function AdminTemplatesPage() {
                 onChange={(e) =>
                   setForm({ ...form, categoryId: e.target.value })
                 }
-                className="mt-1 w-full rounded border px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                className="mt-1 w-full rounded border border-white/10 bg-[#12101a] px-2 py-1.5 text-sm text-zinc-100"
                 required
               >
                 <option value="">Select…</option>
@@ -548,11 +585,11 @@ export function AdminTemplatesPage() {
               </select>
             </label>
             <label className="block text-xs">
-              AI model
+              Kling model / version
               <select
                 value={form.aiModelId}
                 onChange={(e) => setForm({ ...form, aiModelId: e.target.value })}
-                className="mt-1 w-full rounded border px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                className="mt-1 w-full rounded border border-white/10 bg-[#12101a] px-2 py-1.5 text-sm text-zinc-100"
                 required
               >
                 <option value="">Select…</option>
@@ -564,31 +601,31 @@ export function AdminTemplatesPage() {
               </select>
             </label>
             <label className="block text-xs">
-              Duration (sec)
+              Длительность (сек)
               <input
                 value={form.durationSeconds}
                 onChange={(e) =>
                   setForm({ ...form, durationSeconds: e.target.value })
                 }
-                className="mt-1 w-full rounded border px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                className="mt-1 w-full rounded border border-white/10 bg-[#12101a] px-2 py-1.5 text-sm text-zinc-100"
               />
             </label>
             <label className="block text-xs">
-              Aspect ratio
+              Соотношение сторон
               <input
                 value={form.aspectRatio}
                 onChange={(e) =>
                   setForm({ ...form, aspectRatio: e.target.value })
                 }
-                className="mt-1 w-full rounded border px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                className="mt-1 w-full rounded border border-white/10 bg-[#12101a] px-2 py-1.5 text-sm text-zinc-100"
               />
             </label>
             <label className="block text-xs">
-              Credit cost
+              Стоимость в кредитах
               <input
                 value={form.creditCost}
                 onChange={(e) => setForm({ ...form, creditCost: e.target.value })}
-                className="mt-1 w-full rounded border px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                className="mt-1 w-full rounded border border-white/10 bg-[#12101a] px-2 py-1.5 text-sm text-zinc-100"
               />
             </label>
             <label className="block text-xs">
@@ -596,7 +633,7 @@ export function AdminTemplatesPage() {
               <input
                 value={form.sortOrder}
                 onChange={(e) => setForm({ ...form, sortOrder: e.target.value })}
-                className="mt-1 w-full rounded border px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                className="mt-1 w-full rounded border border-white/10 bg-[#12101a] px-2 py-1.5 text-sm text-zinc-100"
               />
             </label>
           </div>
@@ -612,20 +649,39 @@ export function AdminTemplatesPage() {
                       setForm({ ...form, [flag]: e.target.checked })
                     }
                   />
-                  {flag.replace("is", "")}
+                  {flag === "isTrending"
+                    ? "Trending"
+                    : flag === "isNew"
+                      ? "New"
+                      : flag === "isPro"
+                        ? "Pro"
+                        : "Popular"}
                 </label>
               ),
             )}
           </div>
 
-          <div className="flex flex-wrap gap-2 border-t pt-3 dark:border-zinc-800">
+          <label className="block text-xs">
+            Статус
+            <select
+              value={form.status}
+              onChange={(e) => setForm({ ...form, status: e.target.value })}
+              className="mt-1 w-full rounded border border-white/10 bg-[#12101a] px-2 py-1.5 text-sm text-zinc-100"
+            >
+              <option value="active">Активен</option>
+              <option value="draft">Черновик</option>
+              <option value="archived">Неактивен</option>
+            </select>
+          </label>
+
+          <div className="flex flex-wrap gap-2 border-t border-white/10 pt-3">
             <button
               type="button"
               disabled={busy}
               className="rounded-lg bg-zinc-700 px-3 py-2 text-sm text-white disabled:opacity-50"
-              onClick={() => void save(true)}
+              onClick={() => void save(false)}
             >
-              Save draft
+              Сохранить
             </button>
             <input
               ref={testPhotoInput}
@@ -670,7 +726,7 @@ export function AdminTemplatesPage() {
           ) : null}
 
           {versions.length > 0 ? (
-            <div className="border-t pt-3 dark:border-zinc-800">
+            <div className="border-t pt-3 border-white/10">
               <p className="mb-2 text-xs font-medium">Version history</p>
               <ul className="max-h-40 space-y-1 overflow-y-auto text-xs text-zinc-500">
                 {versions.map((v) => (

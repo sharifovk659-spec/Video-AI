@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 480">
+  <defs>
+    <linearGradient id="fire" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#7f1d1d"/>
+      <stop offset="1" stop-color="#f97316"/>
+    </linearGradient>
+  </defs>
+  <rect width="360" height="480" fill="#1c0a05"/>
+  <path d="M180 80 C240 180 250 240 180 360 C110 240 120 180 180 80 Z" fill="url(#fire)"/>
+  <path d="M180 160 C210 220 200 260 180 300 C160 250 150 210 180 160 Z" fill="#fde68a" opacity="0.85"/>
+</svg>

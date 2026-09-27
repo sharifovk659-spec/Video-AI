@@ -310,6 +310,124 @@ async function main() {
     });
   }
 
+  const NEGATIVE =
+    "different person, identity change, face swap, extra face, deformed face, extra limbs, cartoon, anime, watermark, text, logo, blurry, low quality, plastic skin";
+
+  const klingTemplates = [
+    {
+      slug: "lion-transformation",
+      title: "Lion Transformation",
+      description: "Кинематографичное превращение в льва. Лицо остаётся вашим.",
+      categorySlug: "animals",
+      cover: "/covers/lion.svg",
+      isTrending: true,
+      isNew: true,
+      creditCost: 4,
+      sortOrder: 1,
+      prompt:
+        "Image-to-video of the exact same person in the photo. Lock facial identity: same face shape, eyes, age, and skin tone. A photoreal lion transformation unfolds around them — a natural golden mane of fur and light grows from the hair and shoulders, amber rim light in the eyes, powerful but graceful posture. The person never becomes someone else. Cinematic 35mm look, slow push-in, realistic motion, shallow depth of field.",
+    },
+    {
+      slug: "eagle-transformation",
+      title: "Eagle Transformation",
+      description: "Ветер и перья света. Лицо человека сохраняется.",
+      categorySlug: "animals",
+      cover: "/covers/eagle.svg",
+      isTrending: true,
+      isNew: true,
+      creditCost: 4,
+      sortOrder: 2,
+      prompt:
+        "Image-to-video of the same person. Preserve the face exactly. Wind lifts the hair as realistic feather-like light forms at the shoulders, suggesting an eagle spirit without replacing the human. Golden-hour sky, photoreal skin, slow majestic camera drift, film grain, natural blink and breath. Identity must stay recognizable throughout.",
+    },
+    {
+      slug: "shark-transformation",
+      title: "Shark Transformation",
+      description: "Глубокая вода и свет каустики. Лицо не меняется.",
+      categorySlug: "animals",
+      cover: "/covers/shark.svg",
+      isTrending: false,
+      isNew: true,
+      creditCost: 4,
+      sortOrder: 3,
+      prompt:
+        "Image-to-video of the same person underwater. Keep facial identity identical. Cool caustic light moves across the real face, hair drifts naturally, and a realistic shark silhouette glides in the deep blue behind them without covering or replacing the face. Photoreal skin, slow drift, anamorphic bokeh, cinematic color grade.",
+    },
+    {
+      slug: "cinematic-superhero",
+      title: "Cinematic Superhero",
+      description: "Героический кадр с тем же лицом и реалистичной тканью.",
+      categorySlug: "cinematic",
+      cover: "/covers/hero.svg",
+      isTrending: true,
+      isNew: true,
+      creditCost: 5,
+      sortOrder: 4,
+      prompt:
+        "Cinematic superhero reveal of the same person in the photo. Do not change the face, age, or identity. A tailored dark suit and cape form with realistic fabric physics, city lights, strong rim light, slow heroic camera rise. Photoreal skin texture, natural confident motion, film-still quality, no cartoon costume, no different actor.",
+    },
+    {
+      slug: "fire-transformation",
+      title: "Fire Transformation",
+      description: "Контролируемый огонь вокруг человека. Лицо в безопасности и узнаваемо.",
+      categorySlug: "transformation",
+      cover: "/covers/fire.svg",
+      isTrending: false,
+      isNew: true,
+      creditCost: 4,
+      sortOrder: 5,
+      prompt:
+        "Image-to-video of the same person. Preserve the face exactly and keep skin unburned. Controlled cinematic fire and embers orbit the body and shoulders, warm backlight on the real face, slow-motion sparks, photoreal skin highlights. The person stays human and recognizable — flames never replace the face or turn them into a creature.",
+    },
+  ] as const;
+
+  for (const sample of klingTemplates) {
+    const categoryId = bySlug[sample.categorySlug];
+    if (!categoryId) continue;
+    await prisma.template.upsert({
+      where: { slug: sample.slug },
+      create: {
+        slug: sample.slug,
+        title: sample.title,
+        description: sample.description,
+        categoryId,
+        aiModelId: klingModel.id,
+        status: TemplateStatus.active,
+        isPro: false,
+        isTrending: sample.isTrending,
+        isNew: sample.isNew,
+        isPopular: sample.isTrending,
+        creditCost: sample.creditCost,
+        sortOrder: sample.sortOrder,
+        aspectRatio: "9:16",
+        durationSeconds: 5,
+        estimatedApiCostCents: 20,
+        prompt: sample.prompt,
+        negativePrompt: NEGATIVE,
+        coverUrl: sample.cover,
+        thumbnailUrl: sample.cover,
+        previewVideoUrl: null,
+      },
+      update: {
+        title: sample.title,
+        description: sample.description,
+        categoryId,
+        aiModelId: klingModel.id,
+        status: TemplateStatus.active,
+        isTrending: sample.isTrending,
+        isNew: sample.isNew,
+        creditCost: sample.creditCost,
+        sortOrder: sample.sortOrder,
+        aspectRatio: "9:16",
+        durationSeconds: 5,
+        prompt: sample.prompt,
+        negativePrompt: NEGATIVE,
+        coverUrl: sample.cover,
+        thumbnailUrl: sample.cover,
+      },
+    });
+  }
+
   const studioCategoryId = bySlug.studio ?? bySlug.fun;
   if (studioCategoryId) {
     await prisma.template.upsert({
