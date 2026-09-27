@@ -8,6 +8,10 @@ import {
 } from "@/lib/uploads/signed-access";
 import { getSessionFromCookies } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
+import {
+  isDatabaseTemplateMediaKey,
+  readTemplateMediaBytes,
+} from "@/lib/uploads/template-media-storage";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +44,23 @@ export async function GET(request: NextRequest, { params }: Params) {
     }
 
     const key = segments.map(decodeURIComponent).join("/");
+
+    if (isDatabaseTemplateMediaKey(key)) {
+      const media = await readTemplateMediaBytes(key);
+      if (!media) {
+        return NextResponse.json(
+          { error: { code: "NOT_FOUND", message: "Not found" } },
+          { status: 404 },
+        );
+      }
+      return new NextResponse(new Uint8Array(media.bytes), {
+        headers: {
+          "Content-Type": media.mimeType,
+          "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+        },
+      });
+    }
+
     const storage = getStorageAdapter();
     const safeKey = storage.resolveSafeKey(key);
 

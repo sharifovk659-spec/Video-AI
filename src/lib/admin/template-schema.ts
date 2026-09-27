@@ -1,14 +1,25 @@
 import { z } from "zod";
 import { TemplateStatus } from "@prisma/client";
 
+const mediaUrlSchema = z
+  .string()
+  .max(2048)
+  .refine(
+    (value) =>
+      value.startsWith("/") || z.string().url().safeParse(value).success,
+    "Must be an absolute URL or a site path",
+  )
+  .optional()
+  .nullable();
+
 export const adminTemplateWriteSchema = z.object({
   name: z.string().min(1).max(255),
   slug: z.string().min(1).max(128).regex(/^[a-z0-9-]+$/),
   description: z.string().max(5000).optional().nullable(),
   categoryId: z.string().uuid(),
-  coverUrl: z.string().url().optional().nullable(),
-  thumbnailUrl: z.string().url().optional().nullable(),
-  previewVideoUrl: z.string().url().optional().nullable(),
+  coverUrl: mediaUrlSchema,
+  thumbnailUrl: mediaUrlSchema,
+  previewVideoUrl: mediaUrlSchema,
   prompt: z.string().min(1),
   negativePrompt: z.string().optional().nullable(),
   aiModelId: z.string().uuid(),

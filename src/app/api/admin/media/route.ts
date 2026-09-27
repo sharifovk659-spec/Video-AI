@@ -3,9 +3,12 @@ import { requireAdminApiSession } from "@/lib/admin/require-admin-api";
 import { getEnv } from "@/lib/config/env";
 import { handleApiError } from "@/lib/errors/handle-api-error";
 import { AppError } from "@/lib/errors/app-error";
-import { getStorageAdapter } from "@/lib/storage/storage-adapter";
 import { validatePhotoUpload } from "@/lib/uploads/validate-photo";
 import { validateVideoUpload } from "@/lib/uploads/validate-video";
+import {
+  deleteTemplateMedia,
+  storeTemplateMedia,
+} from "@/lib/uploads/template-media-storage";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +18,7 @@ export const dynamic = "force-dynamic";
  */
 export async function POST(request: NextRequest) {
   try {
-    const { user } = await requireAdminApiSession();
+    await requireAdminApiSession();
     const form = await request.formData();
     const kindRaw = String(form.get("kind") ?? "");
     const file = form.get("file");
@@ -25,7 +28,6 @@ export async function POST(request: NextRequest) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const storage = getStorageAdapter();
     const env = getEnv();
 
     if (kindRaw === "cover") {
@@ -35,16 +37,17 @@ export async function POST(request: NextRequest) {
         file.name,
         env.TEMPLATE_COVER_MAX_BYTES,
       );
-      const stored = await storage.put("template_covers", buffer, {
-        contentType: validated.mimeType,
+      const stored = await storeTemplateMedia({
+        kind: "cover",
+        body: buffer,
+        mimeType: validated.mimeType,
         extension: validated.extension,
-        scopeId: user.id,
       });
       return NextResponse.json({
         data: {
           kind: "cover",
-          storageKey: stored.key,
-          url: stored.publicUrl,
+          storageKey: stored.storageKey,
+          url: stored.url,
           mimeType: validated.mimeType,
           sizeBytes: stored.sizeBytes,
         },
@@ -58,16 +61,17 @@ export async function POST(request: NextRequest) {
         file.name,
         env.TEMPLATE_PREVIEW_MAX_BYTES,
       );
-      const stored = await storage.put("template_previews", buffer, {
-        contentType: validated.mimeType,
+      const stored = await storeTemplateMedia({
+        kind: "preview",
+        body: buffer,
+        mimeType: validated.mimeType,
         extension: validated.extension,
-        scopeId: user.id,
       });
       return NextResponse.json({
         data: {
           kind: "preview",
-          storageKey: stored.key,
-          url: stored.publicUrl,
+          storageKey: stored.storageKey,
+          url: stored.url,
           mimeType: validated.mimeType,
           sizeBytes: stored.sizeBytes,
         },
@@ -78,6 +82,20 @@ export async function POST(request: NextRequest) {
       "VALIDATION_ERROR",
       "kind must be cover or preview",
     );
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    await requireAdminApiSession();
+    const key = request.nextUrl.searchParams.get("key");
+    if (!key) {
+      throw new AppError("VALIDATION_ERROR", "Missing key");
+    }
+    await deleteTemplateMedia(key);
+    return NextResponse.json({ ok: true });
   } catch (error) {
     return handleApiError(error);
   }

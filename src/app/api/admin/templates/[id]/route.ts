@@ -9,6 +9,7 @@ import {
   recipeChanged,
 } from "@/lib/templates/versions";
 import { cacheInvalidate } from "@/lib/cache/memory-cache";
+import { deleteTemplateMedia } from "@/lib/uploads/template-media-storage";
 
 export const dynamic = "force-dynamic";
 
@@ -134,6 +135,19 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     });
 
     cacheInvalidate("public:");
+
+    if (
+      body.coverStorageKey !== undefined &&
+      body.coverStorageKey !== before.coverStorageKey
+    ) {
+      await deleteTemplateMedia(before.coverStorageKey);
+    }
+    if (
+      body.previewStorageKey !== undefined &&
+      body.previewStorageKey !== before.previewStorageKey
+    ) {
+      await deleteTemplateMedia(before.previewStorageKey);
+    }
 
     return NextResponse.json({ data: updated });
   } catch (error) {

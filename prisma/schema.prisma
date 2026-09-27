@@ -188,6 +188,19 @@ model Template {
   @@map("templates")
 }
 
+/// Durable template cover/preview bytes (Vercel has no persistent disk).
+model TemplateMediaObject {
+  storageKey String   @id @map("storage_key") @db.VarChar(512)
+  createdAt  DateTime @default(now()) @map("created_at")
+  kind       String   @db.VarChar(32)
+  mimeType   String   @map("mime_type") @db.VarChar(64)
+  sizeBytes  Int      @map("size_bytes")
+  dataBytes  Bytes    @map("data_bytes") @db.LongBlob
+
+  @@index([kind])
+  @@map("template_media_objects")
+}
+
 /// Immutable recipe snapshot for audit — generations reference the version used at create time
 model TemplateVersion {
   id              String   @id @default(uuid()) @db.Char(36)

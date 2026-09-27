@@ -149,6 +149,7 @@ export function AdminTemplatesPage() {
       estimatedApiCostCents: Number(form.estimatedApiCostCents),
       description: form.description || null,
       coverUrl: form.coverUrl || null,
+      thumbnailUrl: form.coverUrl || null,
       previewVideoUrl: form.previewVideoUrl || null,
       coverStorageKey: form.coverStorageKey || null,
       previewStorageKey: form.previewStorageKey || null,
@@ -511,6 +512,21 @@ export function AdminTemplatesPage() {
             >
               Загрузить обложку
             </button>
+            {form.coverUrl ? (
+              <button
+                type="button"
+                className="ml-2 text-xs text-rose-300"
+                onClick={() =>
+                  setForm((f) => ({
+                    ...f,
+                    coverUrl: "",
+                    coverStorageKey: "",
+                  }))
+                }
+              >
+                Удалить обложку
+              </button>
+            ) : null}
           </div>
 
           <div className="rounded-lg border border-dashed p-3 border-white/15">
@@ -541,6 +557,21 @@ export function AdminTemplatesPage() {
             >
               Загрузить превью
             </button>
+            {form.previewVideoUrl ? (
+              <button
+                type="button"
+                className="ml-2 text-xs text-rose-300"
+                onClick={() =>
+                  setForm((f) => ({
+                    ...f,
+                    previewVideoUrl: "",
+                    previewStorageKey: "",
+                  }))
+                }
+              >
+                Удалить превью
+              </button>
+            ) : null}
           </div>
 
           <label className="block text-xs">

@@ -50,19 +50,20 @@ export function validateVideoUpload(
     throw new AppError("VALIDATION_ERROR", "Unsupported video extension");
   }
 
-  const mime = declaredMime.split(";")[0]?.trim().toLowerCase() ?? "";
-  if (!ALLOWED_MIME.has(mime)) {
-    throw new AppError("VALIDATION_ERROR", "Unsupported video MIME type");
+  let mime = declaredMime.split(";")[0]?.trim().toLowerCase() ?? "";
+  const isMp4 = looksLikeMp4(buffer);
+  const isWebm = looksLikeWebm(buffer);
+  if (!isMp4 && !isWebm) {
+    throw new AppError("VALIDATION_ERROR", "File content does not match type");
   }
-
-  if (mime === "video/mp4" || mime === "video/quicktime") {
-    if (!looksLikeMp4(buffer)) {
-      throw new AppError("VALIDATION_ERROR", "File content does not match type");
-    }
-  } else if (mime === "video/webm") {
-    if (!looksLikeWebm(buffer)) {
-      throw new AppError("VALIDATION_ERROR", "File content does not match type");
-    }
+  if (!mime) {
+    mime = isWebm ? "video/webm" : "video/mp4";
+  } else if (!ALLOWED_MIME.has(mime)) {
+    throw new AppError("VALIDATION_ERROR", "Unsupported video MIME type");
+  } else if (mime === "video/webm" && !isWebm) {
+    throw new AppError("VALIDATION_ERROR", "File content does not match type");
+  } else if ((mime === "video/mp4" || mime === "video/quicktime") && !isMp4) {
+    throw new AppError("VALIDATION_ERROR", "File content does not match type");
   }
 
   return { mimeType: mime, extension: ext === "mov" ? "mov" : ext };
