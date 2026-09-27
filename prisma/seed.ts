@@ -422,8 +422,6 @@ async function main() {
         durationSeconds: 5,
         prompt: sample.prompt,
         negativePrompt: NEGATIVE,
-        coverUrl: sample.cover,
-        thumbnailUrl: sample.cover,
       },
     });
   }

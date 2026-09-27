@@ -486,6 +486,7 @@ export function AdminTemplatesPage() {
 
           <div className="rounded-lg border border-dashed p-3 border-white/15">
             <p className="mb-2 text-xs font-medium">Обложка</p>
+            <p className="mb-2 text-[11px] text-zinc-400">JPG, PNG или WebP</p>
             {form.coverUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -531,6 +532,7 @@ export function AdminTemplatesPage() {
 
           <div className="rounded-lg border border-dashed p-3 border-white/15">
             <p className="mb-2 text-xs font-medium">Превью-видео</p>
+            <p className="mb-2 text-[11px] text-zinc-400">MP4 или WebM, до 4 МБ</p>
             {form.previewVideoUrl ? (
               <video
                 src={form.previewVideoUrl}

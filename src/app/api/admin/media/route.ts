@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 /**
  * Admin media upload for template covers / preview videos.
- * Stored via StorageAdapter under dedicated namespaces (not in DB as blobs).
+ * On Vercel the bytes are stored in MySQL and served from /api/v1/media.
  */
 export async function POST(request: NextRequest) {
   try {
