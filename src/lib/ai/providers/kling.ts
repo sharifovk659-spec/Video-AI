@@ -6,12 +6,16 @@ import type {
   GenerationStatusResult,
   NormalizedProviderError,
 } from "@/lib/ai/types";
+import type { Env } from "@/lib/config/env";
 import { getEnv } from "@/lib/config/env";
 import { AppError } from "@/lib/errors/app-error";
 
+const PIAPI_DEFAULT_BASE = "https://api.piapi.ai";
+
+type KlingModelConfig = { version: string; mode: "std" | "pro" };
+
 /**
- * Kling adapter — credentials from env only.
- * Does not invent successful results when API is unavailable.
+ * Kling via PiAPI (https://piapi.ai) — credentials from env only.
  */
 export class KlingProvider implements AIProvider {
   readonly slug = "kling";
@@ -19,34 +23,51 @@ export class KlingProvider implements AIProvider {
   private requireCredentials(): { apiKey: string; baseUrl: string } {
     const env = getEnv();
     const apiKey = env.KLING_API_KEY;
-    const baseUrl = env.KLING_API_BASE_URL;
-    if (!apiKey || !baseUrl) {
+    if (!apiKey) {
       throw new AppError(
         "SERVICE_UNAVAILABLE",
         "Kling provider is not configured",
         { expose: false },
       );
     }
-    return { apiKey, baseUrl: baseUrl.replace(/\/$/, "") };
+    const baseUrl = (env.KLING_API_BASE_URL ?? PIAPI_DEFAULT_BASE).replace(
+      /\/$/,
+      "",
+    );
+    return { apiKey, baseUrl };
   }
 
   async createGeneration(input: CreateGenerationInput): Promise<CreateGenerationResult> {
     const { apiKey, baseUrl } = this.requireCredentials();
+    const env = getEnv();
+    const { version, mode } = parseKlingModelConfig(input.modelSlug, env);
+    const duration = normalizeDuration(input.durationSeconds);
+    const aspectRatio = input.aspectRatio ?? "9:16";
+
+    if (!input.imageUrl) {
+      throw new Error("Kling image-to-video requires image_url");
+    }
+
     try {
-      const response = await fetch(`${baseUrl}/v1/videos/generations`, {
+      const response = await fetch(`${baseUrl}/api/v1/task`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${apiKey}`,
+          "X-API-Key": apiKey,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: input.modelSlug,
-          prompt: input.prompt,
-          negative_prompt: input.negativePrompt,
-          image_url: input.imageUrl,
-          duration: input.durationSeconds,
-          aspect_ratio: input.aspectRatio,
-          external_id: input.generationId,
+          model: "kling",
+          task_type: "video_generation",
+          input: {
+            prompt: input.prompt,
+            negative_prompt: input.negativePrompt ?? undefined,
+            image_url: input.imageUrl,
+            version,
+            mode,
+            duration,
+            aspect_ratio: aspectRatio,
+            enable_audio: false,
+          },
         }),
       });
 
@@ -55,10 +76,11 @@ export class KlingProvider implements AIProvider {
         throw new Error(`Kling create failed (${response.status}): ${text.slice(0, 300)}`);
       }
 
-      const data = (await response.json()) as { id?: string; request_id?: string };
-      const providerRequestId = data.id ?? data.request_id;
+      const data = (await response.json()) as PiApiEnvelope<PiApiTask>;
+      const task = data.data ?? (data as unknown as PiApiTask);
+      const providerRequestId = task.task_id;
       if (!providerRequestId) {
-        throw new Error("Kling response missing request id");
+        throw new Error("Kling response missing task_id");
       }
       return { providerRequestId };
     } catch (error) {
@@ -71,33 +93,41 @@ export class KlingProvider implements AIProvider {
   async getGenerationStatus(providerRequestId: string): Promise<GenerationStatusResult> {
     const { apiKey, baseUrl } = this.requireCredentials();
     const response = await fetch(
-      `${baseUrl}/v1/videos/generations/${encodeURIComponent(providerRequestId)}`,
-      { headers: { Authorization: `Bearer ${apiKey}` } },
+      `${baseUrl}/api/v1/task/${encodeURIComponent(providerRequestId)}`,
+      { headers: { "X-API-Key": apiKey } },
     );
     if (!response.ok) {
       throw new Error(`Kling status failed (${response.status})`);
     }
-    const data = (await response.json()) as {
-      status?: string;
-      output_url?: string;
-      error?: string;
-      stage?: string;
-    };
+    const data = (await response.json()) as PiApiEnvelope<PiApiTask>;
+    const task = data.data ?? (data as unknown as PiApiTask);
+    const outputUrl =
+      task.output?.video_url ??
+      task.output?.videoUrl ??
+      task.output_url ??
+      null;
+    const errorField = task.error;
+    const errorMessage =
+      task.error_message ??
+      (typeof errorField === "string"
+        ? errorField
+        : errorField?.message ?? null);
+
     return {
-      status: mapProviderStatus(data.status),
-      outputUrl: data.output_url ?? null,
-      errorMessage: data.error ?? null,
-      stage: data.stage ?? null,
+      status: mapProviderStatus(task.status),
+      outputUrl,
+      errorMessage,
+      stage: task.status ?? null,
     };
   }
 
   async cancelGeneration(providerRequestId: string): Promise<void> {
     const { apiKey, baseUrl } = this.requireCredentials();
     await fetch(
-      `${baseUrl}/v1/videos/generations/${encodeURIComponent(providerRequestId)}/cancel`,
+      `${baseUrl}/api/v1/task/${encodeURIComponent(providerRequestId)}/cancel`,
       {
         method: "POST",
-        headers: { Authorization: `Bearer ${apiKey}` },
+        headers: { "X-API-Key": apiKey },
       },
     );
   }
@@ -117,6 +147,35 @@ export class KlingProvider implements AIProvider {
   }
 }
 
+type PiApiEnvelope<T> = { code?: number; data?: T };
+type PiApiTask = {
+  task_id?: string;
+  status?: string;
+  output?: { video_url?: string; videoUrl?: string };
+  output_url?: string;
+  error?: { message?: string } | string;
+  error_message?: string;
+};
+
+export function parseKlingModelConfig(
+  modelSlug: string,
+  env: Env,
+): KlingModelConfig {
+  const match = modelSlug.match(/^video-kling-([\d.]+)-(std|pro)$/);
+  if (match) {
+    return { version: match[1], mode: match[2] as "std" | "pro" };
+  }
+  const version = env.KLING_VERSION?.trim() || "2.5";
+  const modeRaw = env.KLING_MODE?.trim() || "std";
+  const mode = modeRaw === "pro" ? "pro" : "std";
+  return { version, mode };
+}
+
+export function normalizeDuration(durationSeconds?: number | null): 5 | 10 {
+  if (!durationSeconds || durationSeconds <= 5) return 5;
+  return 10;
+}
+
 function mapProviderStatus(status?: string): GenerationStatusResult["status"] {
   switch ((status ?? "").toLowerCase()) {
     case "queued":
@@ -132,7 +191,9 @@ function mapProviderStatus(status?: string): GenerationStatusResult["status"] {
     case "cancelled":
     case "canceled":
       return "cancelled";
-    default:
+    case "failed":
       return "failed";
+    default:
+      return status ? "processing" : "failed";
   }
 }

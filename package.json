@@ -19,7 +19,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:validate": "prisma validate",
     "postinstall": "prisma generate",
-    "test": "tsx --test src/lib/config/env.test.ts src/lib/security/telegram-init-data.test.ts src/lib/auth/session-token.test.ts src/lib/auth/authenticate-telegram-init-data.test.ts src/lib/uploads/validate-photo.test.ts src/lib/uploads/user-photo-storage.test.ts src/lib/ai/providers/mock.test.ts src/lib/credits/monetization.test.ts src/lib/moderation/pre-generation.test.ts src/bot/mini-app-keyboard.test.ts src/lib/admin/admin-auth.test.ts src/lib/critical-flows.integration.test.ts"
+    "test": "tsx --test src/lib/config/env.test.ts src/lib/security/telegram-init-data.test.ts src/lib/auth/session-token.test.ts src/lib/auth/authenticate-telegram-init-data.test.ts src/lib/uploads/validate-photo.test.ts src/lib/uploads/user-photo-storage.test.ts src/lib/ai/providers/mock.test.ts src/lib/ai/providers/kling.test.ts src/lib/ai/providers/piapi-ephemeral.test.ts src/lib/ai/resolve-provider.test.ts src/lib/credits/monetization.test.ts src/lib/moderation/pre-generation.test.ts src/bot/mini-app-keyboard.test.ts src/lib/admin/admin-auth.test.ts src/lib/admin/adjust-user-free-generations.test.ts src/lib/critical-flows.integration.test.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",

@@ -1,4 +1,5 @@
 import { GenerationStatus } from "@prisma/client";
+import { resolveAIModelSlug, resolveAIProviderSlug } from "@/lib/ai/resolve-provider";
 import { getAIProvider } from "@/lib/ai/registry";
 import { getEnv } from "@/lib/config/env";
 import { refundGenerationCredits, finalizeGenerationCredits } from "@/lib/credits/charge";
@@ -139,8 +140,9 @@ async function processOneJob(): Promise<boolean> {
   }
 
   try {
-    const providerSlug =
+    const rawProviderSlug =
       generation.providerSlug ?? generation.template.aiModel.provider.slug;
+    const providerSlug = resolveAIProviderSlug(rawProviderSlug);
     const provider = getAIProvider(providerSlug);
 
     if (!generation.providerRequestId) {
@@ -181,10 +183,14 @@ async function processOneJob(): Promise<boolean> {
         generation.snapshottedNegativePrompt ??
         generation.template.negativePrompt;
 
+      const modelSlug = resolveAIModelSlug(
+        rawProviderSlug,
+        generation.providerModelSlug ?? generation.template.aiModel.slug,
+      );
+
       const created = await provider.createGeneration({
         generationId: generation.id,
-        modelSlug:
-          generation.providerModelSlug ?? generation.template.aiModel.slug,
+        modelSlug,
         prompt,
         negativePrompt,
         imageUrl,

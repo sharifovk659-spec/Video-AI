@@ -37,8 +37,11 @@ Set these in **Vercel → Project → Settings → Environment Variables** (Prod
 
 | Variable | Notes |
 |----------|--------|
-| `KLING_API_KEY` / `VEO_API_KEY` | Provider credentials |
-| `KLING_API_BASE_URL` / `VEO_API_BASE_URL` | Optional overrides |
+| `KLING_API_KEY` | **PiAPI** key from [piapi.ai/workspace](https://piapi.ai/workspace) (Kling image-to-video) |
+| `KLING_API_BASE_URL` | Default `https://api.piapi.ai` if omitted |
+| `KLING_DEFAULT_MODEL_SLUG` | Default `video-kling-2.5-std` |
+| `GENERATION_WORKER_SECRET` | Bearer for `/api/internal/generation-worker`; set the same value as Vercel `CRON_SECRET` for cron |
+| `VEO_API_KEY` / `VEO_API_BASE_URL` | Optional second provider |
 | `TELEGRAM_NOTIFY_ENABLED` | Default `true` |
 | `UPLOAD_MAX_BYTES` | Default `5242880` |
 | `GENERATION_JOB_*` | Worker tuning |
@@ -203,6 +206,8 @@ pm2 save
 ```
 
 Restart web (Vercel redeploy) **and** worker after env changes.
+
+**Vercel Hobby:** no per-minute cron (Pro only). Use Hostinger `npm run worker:start`, or call `POST /api/internal/generation-worker` with `Authorization: Bearer <GENERATION_WORKER_SECRET>` on a schedule. Mini App status polling also calls `kickGenerationWorker` on each generation fetch.
 
 ---
 

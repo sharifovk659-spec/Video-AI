@@ -57,6 +57,13 @@ const envSchema = z.object({
     .optional()
     .transform((v) => (v && v.length > 0 ? v : undefined))
     .pipe(z.string().url().optional()),
+  /** Catalog model slug when redirecting legacy mock templates to Kling */
+  KLING_DEFAULT_MODEL_SLUG: z.string().optional(),
+  KLING_VERSION: z.string().optional(),
+  KLING_MODE: z.enum(["std", "pro"]).optional(),
+  /** Bearer for /api/internal/generation-worker (Vercel Cron + manual kick) */
+  GENERATION_WORKER_SECRET: z.string().optional(),
+  CRON_SECRET: z.string().optional(),
   VEO_API_KEY: z.string().optional(),
   VEO_API_BASE_URL: z
     .string()

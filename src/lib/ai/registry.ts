@@ -1,4 +1,5 @@
 import type { AIProvider } from "@/lib/ai/types";
+import { resolveAIProviderSlug } from "@/lib/ai/resolve-provider";
 import { getEnv } from "@/lib/config/env";
 import { AppError } from "@/lib/errors/app-error";
 import { KlingProvider } from "@/lib/ai/providers/kling";
@@ -27,9 +28,13 @@ export function bootstrapAIProviders(): void {
 
 export function getAIProvider(slug: string): AIProvider {
   bootstrapAIProviders();
-  const provider = registry.get(slug);
+  const resolved = resolveAIProviderSlug(slug);
+  const provider = registry.get(resolved);
   if (!provider) {
-    throw new AppError("SERVICE_UNAVAILABLE", `AI provider "${slug}" is not configured`);
+    throw new AppError(
+      "SERVICE_UNAVAILABLE",
+      `AI provider "${resolved}" is not configured`,
+    );
   }
   return provider;
 }

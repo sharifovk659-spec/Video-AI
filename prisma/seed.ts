@@ -106,36 +106,62 @@ async function main() {
     });
   }
 
-  const provider = await prisma.aIProvider.upsert({
+  const mockProvider = await prisma.aIProvider.upsert({
     where: { slug: "mock" },
     create: { slug: "mock", name: "Mock Provider (local/test)", isActive: true },
     update: { isActive: true },
   });
 
-  await prisma.aIProvider.upsert({
+  const klingProvider = await prisma.aIProvider.upsert({
     where: { slug: "kling" },
-    create: { slug: "kling", name: "Kling", isActive: true },
-    update: {},
+    create: { slug: "kling", name: "Kling (PiAPI)", isActive: true },
+    update: { isActive: true, name: "Kling (PiAPI)" },
   });
 
   await prisma.aIProvider.upsert({
     where: { slug: "veo" },
     create: { slug: "veo", name: "Veo", isActive: true },
-    update: {},
+    update: { isActive: true },
   });
 
-  const model = await prisma.aIModel.upsert({
+  const mockModel = await prisma.aIModel.upsert({
     where: {
-      providerId_slug: { providerId: provider.id, slug: "video-mock-v1" },
+      providerId_slug: { providerId: mockProvider.id, slug: "video-mock-v1" },
     },
     create: {
-      providerId: provider.id,
+      providerId: mockProvider.id,
       slug: "video-mock-v1",
       name: "Video Mock v1",
       isActive: true,
     },
     update: { isActive: true },
   });
+
+  const klingModel = await prisma.aIModel.upsert({
+    where: {
+      providerId_slug: {
+        providerId: klingProvider.id,
+        slug: "video-kling-2.5-std",
+      },
+    },
+    create: {
+      providerId: klingProvider.id,
+      slug: "video-kling-2.5-std",
+      name: "Kling 2.5 image-to-video (std)",
+      isActive: true,
+    },
+    update: { isActive: true, name: "Kling 2.5 image-to-video (std)" },
+  });
+
+  const useProductionCatalog = process.env.NODE_ENV === "production";
+  const catalogModel = useProductionCatalog ? klingModel : mockModel;
+
+  if (useProductionCatalog) {
+    await prisma.aIProvider.update({
+      where: { slug: "mock" },
+      data: { isActive: false },
+    });
+  }
 
   const categories = await prisma.templateCategory.findMany();
   const bySlug = Object.fromEntries(categories.map((c) => [c.slug, c.id]));
@@ -250,7 +276,7 @@ async function main() {
         title: sample.title,
         description: sample.description,
         categoryId,
-        aiModelId: model.id,
+        aiModelId: catalogModel.id,
         status: TemplateStatus.active,
         isPro: sample.isPro,
         isTrending: sample.isTrending,
@@ -279,6 +305,7 @@ async function main() {
         coverUrl: sample.cover,
         durationSeconds: 8,
         aspectRatio: "9:16",
+        aiModelId: catalogModel.id,
       },
     });
   }
@@ -292,7 +319,7 @@ async function main() {
         title: "AI Studio",
         description: "Custom prompt studio generations (hidden from catalog).",
         categoryId: studioCategoryId,
-        aiModelId: model.id,
+        aiModelId: catalogModel.id,
         status: TemplateStatus.active,
         isPro: true,
         isTrending: false,
@@ -316,7 +343,7 @@ async function main() {
         creditCost: 5,
         prompt:
           "Create a high-quality short video from the user photo.\nUser direction: {{user_prompt}}",
-        aiModelId: model.id,
+        aiModelId: catalogModel.id,
         categoryId: studioCategoryId,
       },
     });

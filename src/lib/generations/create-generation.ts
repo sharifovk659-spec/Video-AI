@@ -1,4 +1,5 @@
 import { GenerationStatus, TemplateStatus } from "@prisma/client";
+import { resolveAIModelSlug, resolveAIProviderSlug } from "@/lib/ai/resolve-provider";
 import { getAIProvider } from "@/lib/ai/registry";
 import { getEnv } from "@/lib/config/env";
 import {
@@ -93,9 +94,14 @@ export async function createGenerationForUser(params: CreateGenerationParams) {
 
   const version = await getOrCreateVersionForGeneration(template.id);
 
-  const provider = getAIProvider(template.aiModel.provider.slug);
+  const providerSlug = resolveAIProviderSlug(template.aiModel.provider.slug);
+  const modelSlug = resolveAIModelSlug(
+    template.aiModel.provider.slug,
+    template.aiModel.slug,
+  );
+  const provider = getAIProvider(providerSlug);
   const estimatedCost = provider.estimateCost({
-    modelSlug: template.aiModel.slug,
+    modelSlug,
     durationSeconds: template.durationSeconds,
   });
 
@@ -111,8 +117,11 @@ export async function createGenerationForUser(params: CreateGenerationParams) {
         photoUploadId: photo.id,
         status: GenerationStatus.queued,
         stage: "queued",
-        providerSlug: version.providerSlug,
-        providerModelSlug: version.modelSlug,
+        providerSlug: resolveAIProviderSlug(version.providerSlug),
+        providerModelSlug: resolveAIModelSlug(
+          version.providerSlug,
+          version.modelSlug,
+        ),
         estimatedProviderCostCents:
           template.estimatedApiCostCents || estimatedCost,
         idempotencyKey: params.idempotencyKey || null,

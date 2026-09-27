@@ -1,6 +1,7 @@
 import { getOrCreateVersionForGeneration } from "@/lib/templates/versions";
 import { validateStudioInput } from "@/lib/studio/safety";
 import { reserveForGeneration } from "@/lib/credits/charge";
+import { resolveAIModelSlug, resolveAIProviderSlug } from "@/lib/ai/resolve-provider";
 import { getAIProvider } from "@/lib/ai/registry";
 import { getEnv } from "@/lib/config/env";
 import { prisma } from "@/lib/db/prisma";
@@ -129,9 +130,14 @@ export async function createStudioGeneration(params: {
 
   const creditCost = await getStudioCreditCost();
   const version = await getOrCreateVersionForGeneration(template.id);
-  const provider = getAIProvider(template.aiModel.provider.slug);
+  const providerSlug = resolveAIProviderSlug(template.aiModel.provider.slug);
+  const modelSlug = resolveAIModelSlug(
+    template.aiModel.provider.slug,
+    template.aiModel.slug,
+  );
+  const provider = getAIProvider(providerSlug);
   const estimatedCost = provider.estimateCost({
-    modelSlug: template.aiModel.slug,
+    modelSlug,
     durationSeconds: safe.durationSeconds,
   });
   const env = getEnv();
@@ -146,8 +152,11 @@ export async function createStudioGeneration(params: {
         photoUploadId: photo.id,
         status: GenerationStatus.queued,
         stage: "queued",
-        providerSlug: version.providerSlug,
-        providerModelSlug: version.modelSlug,
+        providerSlug: resolveAIProviderSlug(version.providerSlug),
+        providerModelSlug: resolveAIModelSlug(
+          version.providerSlug,
+          version.modelSlug,
+        ),
         estimatedProviderCostCents:
           template.estimatedApiCostCents || estimatedCost,
         idempotencyKey: params.idempotencyKey || null,
