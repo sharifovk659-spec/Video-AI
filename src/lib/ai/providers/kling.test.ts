@@ -39,9 +39,36 @@ describe("KlingProvider", () => {
     let pollCount = 0;
     globalThis.fetch = async (input, init) => {
       const url = String(input);
-      if (url.endsWith("/api/v1/task") && init?.method === "POST") {
+      if (url.includes("/api/ephemeral_resource")) {
         return new Response(
-          JSON.stringify({ data: { task_id: "task-123", status: "pending" } }),
+          JSON.stringify({
+            code: 200,
+            data: { url: "https://cdn.example/uploaded.jpg" },
+          }),
+          { status: 200 },
+        );
+      }
+      if (url.endsWith("/api/v1/task") && init?.method === "POST") {
+        const body = JSON.parse(String(init?.body)) as {
+          input: {
+            prompt: string;
+            image_url: string;
+            version: string;
+            duration: number;
+          };
+          config: { service_mode: string };
+        };
+        assert.equal(body.config.service_mode, "public");
+        assert.ok(body.input.prompt.length > 0);
+        assert.equal(body.input.image_url, "https://cdn.example/uploaded.jpg");
+        assert.equal(body.input.version, "2.5");
+        assert.equal(body.input.duration, 10);
+        assert.equal("aspect_ratio" in body.input, false);
+        return new Response(
+          JSON.stringify({
+            code: 200,
+            data: { task_id: "task-123", status: "pending" },
+          }),
           { status: 200 },
         );
       }
@@ -72,7 +99,8 @@ describe("KlingProvider", () => {
       generationId: "g1",
       modelSlug: "video-kling-2.5-std",
       prompt: "slow zoom",
-      imageUrl: "https://example.com/photo.jpg",
+      imageBytes: Buffer.from("jpeg-bytes"),
+      imageFileName: "photo.jpg",
       durationSeconds: 8,
       aspectRatio: "9:16",
     });

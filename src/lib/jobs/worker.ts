@@ -4,7 +4,10 @@ import { getAIProvider } from "@/lib/ai/registry";
 import { getEnv } from "@/lib/config/env";
 import { refundGenerationCredits, finalizeGenerationCredits } from "@/lib/credits/charge";
 import { prisma } from "@/lib/db/prisma";
+import { redactProviderSecrets } from "@/lib/ai/providers/piapi-errors";
 import { createLogger } from "@/lib/logger";
+import { readUserPhotoBytes } from "@/lib/uploads/user-photo-storage";
+import { mimeToUploadFileName } from "@/lib/ai/providers/piapi-ephemeral";
 import { createUploadAccessToken } from "@/lib/uploads/signed-access";
 import { composeStudioProviderPrompt } from "@/lib/studio/safety";
 import {
@@ -162,15 +165,22 @@ async function processOneJob(): Promise<boolean> {
       });
 
       const appUrl = env.APP_URL.replace(/\/$/, "");
-      const imageUrl =
-        generation.photoUploadId
-          ? `${appUrl}/api/v1/uploads/${generation.photoUploadId}/public?token=${encodeURIComponent(
-              createUploadAccessToken(
-                generation.photoUploadId,
-                generation.userId,
-              ),
-            )}`
-          : null;
+      let imageBytes: Buffer | null = null;
+      let imageFileName: string | null = null;
+      const photo = generation.photoUpload;
+      if (photo) {
+        imageBytes = await readUserPhotoBytes(photo);
+        imageFileName = mimeToUploadFileName(photo.mimeType);
+      }
+      const imageUrl = generation.photoUploadId
+        ? `${appUrl}/api/v1/uploads/${generation.photoUploadId}/public?token=${encodeURIComponent(
+            createUploadAccessToken(
+              generation.photoUploadId,
+              generation.userId,
+              env.PROVIDER_IMAGE_TOKEN_TTL_MS,
+            ),
+          )}`
+        : null;
 
       const basePrompt =
         generation.snapshottedPrompt ?? generation.template.prompt;
@@ -194,6 +204,8 @@ async function processOneJob(): Promise<boolean> {
         prompt,
         negativePrompt,
         imageUrl,
+        imageBytes,
+        imageFileName,
         durationSeconds:
           generation.durationSeconds ?? generation.template.durationSeconds,
         aspectRatio: generation.aspectRatio ?? generation.template.aspectRatio,
@@ -286,11 +298,12 @@ async function processOneJob(): Promise<boolean> {
 
     log.error("Job processing error", {
       jobId: job.id,
-      message,
+      message: redactProviderSecrets(message).slice(0, 500),
       attempts,
     });
 
-    if (attempts >= maxAttempts) {
+    const nonRetryable = /insufficient credits/i.test(message);
+    if (attempts >= maxAttempts || nonRetryable) {
       await failJob(job.id, generation.id, message, true);
     } else {
       await prisma.generationJob.update({

@@ -9,6 +9,20 @@ import type {
 import type { Env } from "@/lib/config/env";
 import { getEnv } from "@/lib/config/env";
 import { AppError } from "@/lib/errors/app-error";
+import { createLogger } from "@/lib/logger";
+import {
+  formatPiApiFailure,
+  isPiApiTaskFailed,
+  redactProviderSecrets,
+} from "@/lib/ai/providers/piapi-errors";
+import {
+  EphemeralUploadNotAllowedError,
+  mimeToUploadFileName,
+  probeProviderImageUrl,
+  uploadPiApiEphemeralImage,
+} from "@/lib/ai/providers/piapi-ephemeral";
+
+const log = createLogger("kling-provider");
 
 const PIAPI_DEFAULT_BASE = "https://api.piapi.ai";
 
@@ -42,11 +56,32 @@ export class KlingProvider implements AIProvider {
     const env = getEnv();
     const { version, mode } = parseKlingModelConfig(input.modelSlug, env);
     const duration = normalizeDuration(input.durationSeconds);
-    const aspectRatio = input.aspectRatio ?? "9:16";
-
-    if (!input.imageUrl) {
-      throw new Error("Kling image-to-video requires image_url");
+    const prompt = (input.prompt ?? "").trim();
+    if (!prompt) {
+      throw new Error("Kling requires a non-empty prompt");
     }
+
+    const imageUrl = await this.resolveImageUrl(apiKey, input);
+    const body = buildKlingTaskBody({
+      prompt,
+      negativePrompt: input.negativePrompt,
+      imageUrl,
+      version,
+      mode,
+      duration,
+    });
+
+    const imageHost = safeImageHost(imageUrl);
+    log.info("Submitting Kling task", {
+      generationId: input.generationId,
+      version,
+      mode,
+      duration,
+      promptChars: prompt.length,
+      hasImageUrl: true,
+      imageHost,
+      endpoint: "/api/v1/task",
+    });
 
     try {
       const response = await fetch(`${baseUrl}/api/v1/task`, {
@@ -55,39 +90,89 @@ export class KlingProvider implements AIProvider {
           "X-API-Key": apiKey,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          model: "kling",
-          task_type: "video_generation",
-          input: {
-            prompt: input.prompt,
-            negative_prompt: input.negativePrompt ?? undefined,
-            image_url: input.imageUrl,
-            version,
-            mode,
-            duration,
-            aspect_ratio: aspectRatio,
-            enable_audio: false,
-          },
-        }),
+        body: JSON.stringify(body),
       });
 
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`Kling create failed (${response.status}): ${text.slice(0, 300)}`);
+      const raw = await response.text();
+      let json: PiApiEnvelope<PiApiTask>;
+      try {
+        json = JSON.parse(raw) as PiApiEnvelope<PiApiTask>;
+      } catch {
+        throw new Error(
+          `Kling create failed (${response.status}): ${redactProviderSecrets(raw).slice(0, 200)}`,
+        );
       }
 
-      const data = (await response.json()) as PiApiEnvelope<PiApiTask>;
-      const task = data.data ?? (data as unknown as PiApiTask);
+      if (!response.ok || (json.code != null && json.code !== 200)) {
+        throw new Error(formatPiApiFailure("create", json, response.status));
+      }
+
+      const task = json.data ?? ({} as PiApiTask);
       const providerRequestId = task.task_id;
       if (!providerRequestId) {
-        throw new Error("Kling response missing task_id");
+        throw new Error(formatPiApiFailure("create", json, response.status));
       }
+
+      if (isPiApiTaskFailed(task.status)) {
+        throw new Error(formatPiApiFailure("create", json, response.status));
+      }
+
       return { providerRequestId };
     } catch (error) {
-      throw Object.assign(error instanceof Error ? error : new Error(String(error)), {
+      const message =
+        error instanceof Error
+          ? redactProviderSecrets(error.message)
+          : redactProviderSecrets(String(error));
+      throw Object.assign(new Error(message), {
         provider: this.slug,
       });
     }
+  }
+
+  private async resolveImageUrl(
+    apiKey: string,
+    input: CreateGenerationInput,
+  ): Promise<string> {
+    const fallbackUrl = input.imageUrl?.trim() || null;
+
+    if (input.imageBytes && input.imageBytes.length > 0) {
+      const fileName =
+        input.imageFileName?.trim() || mimeToUploadFileName("image/jpeg");
+      try {
+        return await uploadPiApiEphemeralImage({
+          apiKey,
+          bytes: input.imageBytes,
+          fileName,
+        });
+      } catch (error) {
+        if (
+          error instanceof EphemeralUploadNotAllowedError &&
+          fallbackUrl
+        ) {
+          log.warn("PiAPI ephemeral upload unavailable; using HTTPS image URL", {
+            generationId: input.generationId,
+          });
+          return this.requireReachableImageUrl(fallbackUrl);
+        }
+        throw error;
+      }
+    }
+
+    if (!fallbackUrl) {
+      throw new Error("Kling image-to-video requires image_url or imageBytes");
+    }
+
+    return this.requireReachableImageUrl(fallbackUrl);
+  }
+
+  private async requireReachableImageUrl(url: string): Promise<string> {
+    const probe = await probeProviderImageUrl(url);
+    if (!probe.ok) {
+      throw new Error(
+        `Source image not reachable for PiAPI (status=${probe.status ?? "network"}). Ensure the photo URL is public HTTPS without bot protection.`,
+      );
+    }
+    return url;
   }
 
   async getGenerationStatus(providerRequestId: string): Promise<GenerationStatusResult> {
@@ -96,11 +181,19 @@ export class KlingProvider implements AIProvider {
       `${baseUrl}/api/v1/task/${encodeURIComponent(providerRequestId)}`,
       { headers: { "X-API-Key": apiKey } },
     );
-    if (!response.ok) {
+    const raw = await response.text();
+    let json: PiApiEnvelope<PiApiTask>;
+    try {
+      json = JSON.parse(raw) as PiApiEnvelope<PiApiTask>;
+    } catch {
       throw new Error(`Kling status failed (${response.status})`);
     }
-    const data = (await response.json()) as PiApiEnvelope<PiApiTask>;
-    const task = data.data ?? (data as unknown as PiApiTask);
+
+    if (!response.ok || (json.code != null && json.code !== 200)) {
+      throw new Error(formatPiApiFailure("status", json, response.status));
+    }
+
+    const task = json.data ?? ({} as PiApiTask);
     const outputUrl =
       task.output?.video_url ??
       task.output?.videoUrl ??
@@ -108,15 +201,28 @@ export class KlingProvider implements AIProvider {
       null;
     const errorField = task.error;
     const errorMessage =
-      task.error_message ??
-      (typeof errorField === "string"
-        ? errorField
-        : errorField?.message ?? null);
+      errorField && typeof errorField === "object"
+        ? errorField.raw_message ?? errorField.message ?? null
+        : typeof errorField === "string"
+          ? errorField
+          : null;
+
+    const failed = isPiApiTaskFailed(task.status);
+    if (failed && !errorMessage) {
+      log.warn("Kling task failed", {
+        taskId: providerRequestId,
+        detail: redactProviderSecrets(formatPiApiFailure("status", json)),
+      });
+    }
 
     return {
       status: mapProviderStatus(task.status),
       outputUrl,
-      errorMessage,
+      errorMessage: errorMessage
+        ? redactProviderSecrets(errorMessage).slice(0, 500)
+        : failed
+          ? formatPiApiFailure("status", json)
+          : null,
       stage: task.status ?? null,
     };
   }
@@ -133,7 +239,9 @@ export class KlingProvider implements AIProvider {
   }
 
   normalizeError(error: unknown): NormalizedProviderError {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = redactProviderSecrets(
+      error instanceof Error ? error.message : String(error),
+    );
     return {
       code: "KLING_ERROR",
       message,
@@ -147,13 +255,13 @@ export class KlingProvider implements AIProvider {
   }
 }
 
-type PiApiEnvelope<T> = { code?: number; data?: T };
+type PiApiEnvelope<T> = { code?: number; message?: string; data?: T };
 type PiApiTask = {
   task_id?: string;
   status?: string;
   output?: { video_url?: string; videoUrl?: string };
   output_url?: string;
-  error?: { message?: string } | string;
+  error?: { message?: string; raw_message?: string } | string;
   error_message?: string;
 };
 
@@ -174,6 +282,61 @@ export function parseKlingModelConfig(
 export function normalizeDuration(durationSeconds?: number | null): 5 | 10 {
   if (!durationSeconds || durationSeconds <= 5) return 5;
   return 10;
+}
+
+export type KlingTaskBody = {
+  model: "kling";
+  task_type: "video_generation";
+  input: {
+    prompt: string;
+    negative_prompt?: string;
+    image_url: string;
+    version: string;
+    mode: "std" | "pro";
+    duration: 5 | 10;
+  };
+  config: { service_mode: "public" };
+};
+
+/** Image-to-video body per PiAPI Kling create-task (no aspect_ratio; image sets frame). */
+export function buildKlingTaskBody(args: {
+  prompt: string;
+  negativePrompt?: string | null;
+  imageUrl: string;
+  version: string;
+  mode: "std" | "pro";
+  duration: 5 | 10;
+}): KlingTaskBody {
+  const prompt = args.prompt.trim();
+  const imageUrl = args.imageUrl.trim();
+  if (!prompt) throw new Error("Kling requires a non-empty prompt");
+  if (!imageUrl.startsWith("https://")) {
+    throw new Error("Kling image_url must be a public HTTPS URL");
+  }
+  if (!args.version.trim()) throw new Error("Kling version is required");
+
+  const negative = args.negativePrompt?.trim();
+  return {
+    model: "kling",
+    task_type: "video_generation",
+    input: {
+      prompt,
+      ...(negative ? { negative_prompt: negative } : {}),
+      image_url: imageUrl,
+      version: args.version,
+      mode: args.mode,
+      duration: args.duration,
+    },
+    config: { service_mode: "public" },
+  };
+}
+
+function safeImageHost(imageUrl: string): string {
+  try {
+    return new URL(imageUrl).host;
+  } catch {
+    return "invalid";
+  }
 }
 
 function mapProviderStatus(status?: string): GenerationStatusResult["status"] {

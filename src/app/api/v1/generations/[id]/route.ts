@@ -3,21 +3,14 @@ import { requireSession } from "@/lib/auth/session";
 import { handleApiError, assertFound } from "@/lib/errors/handle-api-error";
 import { prisma } from "@/lib/db/prisma";
 import { kickGenerationWorker } from "@/lib/jobs/worker";
+import {
+  USER_GENERATION_ERROR,
+  generationProgressPercent,
+} from "@/lib/generations/progress";
 
 export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ id: string }> };
-
-const STAGE_PROGRESS: Record<string, number> = {
-  queued: 10,
-  submitting: 20,
-  retrying: 25,
-  processing: 55,
-  rendering: 75,
-  completed: 100,
-  failed: 100,
-  cancelled: 100,
-};
 
 export async function GET(_request: NextRequest, { params }: Params) {
   try {
@@ -39,7 +32,13 @@ export async function GET(_request: NextRequest, { params }: Params) {
     );
 
     const stage = generation.stage ?? generation.status;
-    const progressHint = STAGE_PROGRESS[stage] ?? STAGE_PROGRESS[generation.status] ?? 15;
+    const progressHint = generationProgressPercent({
+      status: generation.status,
+      stage,
+      createdAt: generation.createdAt,
+    });
+    const failed =
+      generation.status === "failed" || generation.status === "cancelled";
 
     return NextResponse.json({
       data: {
@@ -47,9 +46,9 @@ export async function GET(_request: NextRequest, { params }: Params) {
         status: generation.status,
         stage,
         progressHint,
-        progressIsEstimate: true,
+        progressIsEstimate: generation.status !== "completed",
         outputUrl: generation.outputUrl,
-        errorMessage: generation.errorMessage,
+        errorMessage: failed ? USER_GENERATION_ERROR : null,
         creditsCharged: generation.creditsCharged,
         creditsRefunded: generation.creditsRefunded,
         usedFreeQuota: generation.usedFreeQuota,

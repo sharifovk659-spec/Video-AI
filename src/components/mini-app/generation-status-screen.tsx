@@ -26,10 +26,13 @@ function stageLabel(stage: string | null, status: string) {
   return map[key] ?? key;
 }
 
+const USER_FAIL = "Не удалось создать видео. Попробуйте ещё раз.";
+
 export function GenerationStatusScreen({ id }: { id: string }) {
   const [data, setData] = useState<GenData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [retrying, setRetrying] = useState(false);
+  const [shownProgress, setShownProgress] = useState(1);
   const router = useRouter();
 
   useEffect(() => {
@@ -62,6 +65,17 @@ export function GenerationStatusScreen({ id }: { id: string }) {
       if (timer) clearTimeout(timer);
     };
   }, [id]);
+
+  useEffect(() => {
+    const target = data?.status === "completed" ? 100 : (data?.progressHint ?? 1);
+    const timer = setInterval(() => {
+      setShownProgress((prev) => {
+        if (prev >= target) return prev;
+        return prev + 1;
+      });
+    }, 160);
+    return () => clearInterval(timer);
+  }, [data?.progressHint, data?.status]);
 
   if (!data && !error) {
     return (
@@ -138,7 +152,7 @@ export function GenerationStatusScreen({ id }: { id: string }) {
       <div className="space-y-4 px-4 pb-28 pt-4">
         <h1 className="text-xl font-semibold text-white">Не удалось создать</h1>
         <div className="vidoo-glass rounded-2xl border border-red-500/30 p-4 text-sm text-red-100">
-          {data.errorMessage ?? "Сервис не смог завершить это видео."}
+          {USER_FAIL}
         </div>
         {data.creditsRefunded ? (
           <p className="text-xs text-emerald-300">
@@ -186,18 +200,13 @@ export function GenerationStatusScreen({ id }: { id: string }) {
         <p className="text-sm font-medium text-violet-50">
           {stageLabel(data.stage, data.status)}
         </p>
-        <p className="mt-1 text-xs text-zinc-400">
-          Оценка по этапу, не точный процент провайдера
-        </p>
         <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all duration-500"
-            style={{ width: `${data.progressHint}%` }}
+            className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-[width] duration-150"
+            style={{ width: `${shownProgress}%` }}
           />
         </div>
-        <p className="mt-2 text-[10px] text-zinc-500">
-          ~{data.progressHint}% (оценка)
-        </p>
+        <p className="mt-2 text-xs text-zinc-400">{shownProgress}%</p>
       </div>
 
       <p className="text-center text-xs text-zinc-500">
