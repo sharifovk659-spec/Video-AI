@@ -14,14 +14,14 @@ type GenData = Awaited<ReturnType<typeof fetchGeneration>>["data"];
 function stageLabel(stage: string | null, status: string) {
   const key = (stage ?? status).toLowerCase();
   const map: Record<string, string> = {
-    queued: "Queued",
-    submitting: "Sending to AI",
-    retrying: "Retrying",
-    processing: "Processing",
-    rendering: "Rendering",
-    completed: "Completed",
-    failed: "Failed",
-    cancelled: "Cancelled",
+    queued: "В очереди",
+    submitting: "Отправка в AI",
+    retrying: "Повтор",
+    processing: "Обработка",
+    rendering: "Рендер",
+    completed: "Готово",
+    failed: "Ошибка",
+    cancelled: "Отменено",
   };
   return map[key] ?? key;
 }
@@ -85,7 +85,7 @@ export function GenerationStatusScreen({ id }: { id: string }) {
   if (data.status === "completed" && data.outputUrl) {
     return (
       <div className="space-y-4 px-4 pb-28 pt-4">
-        <h1 className="text-xl font-semibold text-white">Ready</h1>
+        <h1 className="text-xl font-semibold text-white">Готово</h1>
         <video
           src={data.outputUrl}
           controls
@@ -98,7 +98,7 @@ export function GenerationStatusScreen({ id }: { id: string }) {
             download
             className="rounded-xl bg-violet-600 py-3 text-center text-sm font-semibold text-white"
           >
-            Download
+            Скачать
           </a>
           <button
             type="button"
@@ -114,19 +114,19 @@ export function GenerationStatusScreen({ id }: { id: string }) {
               }
             }}
           >
-            Share
+            Поделиться
           </button>
           <Link
             href={`/mini-app/create/${data.template.slug}`}
             className="rounded-xl border border-violet-500/30 py-3 text-center text-sm text-violet-100"
           >
-            Create Another
+            Создать ещё
           </Link>
           <Link
             href="/mini-app/videos"
             className="rounded-xl border border-violet-500/30 py-3 text-center text-sm text-violet-100"
           >
-            My Videos
+            Мои видео
           </Link>
         </div>
       </div>
@@ -136,13 +136,13 @@ export function GenerationStatusScreen({ id }: { id: string }) {
   if (data.status === "failed" || data.status === "cancelled") {
     return (
       <div className="space-y-4 px-4 pb-28 pt-4">
-        <h1 className="text-xl font-semibold text-white">Generation failed</h1>
+        <h1 className="text-xl font-semibold text-white">Не удалось создать</h1>
         <div className="vidoo-glass rounded-2xl border border-red-500/30 p-4 text-sm text-red-100">
-          {data.errorMessage ?? "The provider could not complete this video."}
+          {data.errorMessage ?? "Сервис не смог завершить это видео."}
         </div>
         {data.creditsRefunded ? (
           <p className="text-xs text-emerald-300">
-            Credits / free quota were refunded.
+            Кредиты или бесплатная квота возвращены.
           </p>
         ) : null}
         {data.canRetry ? (
@@ -161,14 +161,14 @@ export function GenerationStatusScreen({ id }: { id: string }) {
               }
             }}
           >
-            {retrying ? "Retrying…" : "Retry"}
+            {retrying ? "Повтор…" : "Повторить"}
           </button>
         ) : null}
         <Link
           href={`/mini-app/create/${data.template.slug}`}
           className="block text-center text-sm text-violet-300"
         >
-          Upload a new photo
+          Загрузить другое фото
         </Link>
       </div>
     );
@@ -177,7 +177,7 @@ export function GenerationStatusScreen({ id }: { id: string }) {
   return (
     <div className="space-y-5 px-4 pb-28 pt-4">
       <div>
-        <p className="text-xs text-violet-300/80">Generating</p>
+        <p className="text-xs text-violet-300/80">Создание</p>
         <h1 className="text-xl font-semibold text-white">{data.template.title}</h1>
       </div>
 
@@ -187,7 +187,7 @@ export function GenerationStatusScreen({ id }: { id: string }) {
           {stageLabel(data.stage, data.status)}
         </p>
         <p className="mt-1 text-xs text-zinc-400">
-          Stage-based estimate — not a live provider percentage
+          Оценка по этапу, не точный процент провайдера
         </p>
         <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
           <div
@@ -196,18 +196,18 @@ export function GenerationStatusScreen({ id }: { id: string }) {
           />
         </div>
         <p className="mt-2 text-[10px] text-zinc-500">
-          ~{data.progressHint}% (estimated)
+          ~{data.progressHint}% (оценка)
         </p>
       </div>
 
       <p className="text-center text-xs text-zinc-500">
-        You can close Telegram — your job keeps running on the server.
+        Можно закрыть Telegram — задача продолжится на сервере.
       </p>
       <Link
         href="/mini-app/videos"
         className="block text-center text-sm text-violet-300"
       >
-        View My Videos
+        Открыть мои видео
       </Link>
     </div>
   );

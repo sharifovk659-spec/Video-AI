@@ -5,9 +5,9 @@ import Link from "next/link";
 import { deleteUpload, uploadPhoto } from "@/lib/mini-app/client-api";
 
 const TIPS = [
-  "Use a clear, well-lit photo of your face or subject.",
-  "Avoid heavy filters — the AI works best with natural images.",
-  "PNG/JPG/WEBP up to 5 MB.",
+  "Чёткое фото при хорошем свете.",
+  "Без сильных фильтров — так AI работает точнее.",
+  "PNG, JPG или WEBP до 5 МБ.",
 ];
 
 export function PhotoUploadFlow({
@@ -58,14 +58,14 @@ export function PhotoUploadFlow({
   return (
     <div className="space-y-5 px-4 pb-28 pt-4">
       <div>
-        <p className="text-xs text-violet-300/80">Template</p>
+        <p className="text-xs text-violet-300/80">Стиль</p>
         <h1 className="text-xl font-semibold text-white">{templateTitle}</h1>
       </div>
 
       <div className="vidoo-glass rounded-2xl p-4">
-        <p className="text-sm font-medium text-violet-50">Upload your photo</p>
+        <p className="text-sm font-medium text-violet-50">Загрузите фото</p>
         <p className="mt-1 text-xs text-zinc-400">
-          JPG, JPEG, PNG, WEBP · validated on the server
+          JPG, JPEG, PNG, WEBP · проверка на сервере
         </p>
 
         {previewUrl ? (
@@ -82,14 +82,14 @@ export function PhotoUploadFlow({
                 onClick={() => inputRef.current?.click()}
                 className="flex-1 rounded-xl border border-violet-500/30 px-3 py-2 text-xs text-violet-100"
               >
-                Replace photo
+                Заменить фото
               </button>
               <button
                 type="button"
                 onClick={() => void removePhoto()}
                 className="flex-1 rounded-xl border border-red-500/30 px-3 py-2 text-xs text-red-200"
               >
-                Remove
+                Удалить
               </button>
             </div>
           </div>
@@ -100,7 +100,7 @@ export function PhotoUploadFlow({
             disabled={uploading}
             className="mt-4 flex w-full flex-col items-center justify-center rounded-xl border border-dashed border-violet-400/30 bg-violet-500/5 px-4 py-10 text-sm text-violet-100"
           >
-            {uploading ? `Uploading… ${progress}%` : "Tap to choose a photo"}
+            {uploading ? `Загрузка… ${progress}%` : "Нажмите, чтобы выбрать фото"}
           </button>
         )}
 
@@ -125,7 +125,7 @@ export function PhotoUploadFlow({
       </div>
 
       <div className="vidoo-glass rounded-2xl p-4 text-xs text-zinc-400">
-        <p className="mb-2 font-medium text-violet-100">Photo tips</p>
+        <p className="mb-2 font-medium text-violet-100">Советы</p>
         <ul className="list-disc space-y-1 pl-4">
           {TIPS.map((tip) => (
             <li key={tip}>{tip}</li>
@@ -138,7 +138,7 @@ export function PhotoUploadFlow({
           href={`/mini-app/create/${templateSlug}/confirm?upload=${uploadId}`}
           className="block rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 py-3 text-center text-sm font-semibold text-white"
         >
-          Continue
+          Далее
         </Link>
       ) : (
         <button
@@ -146,7 +146,7 @@ export function PhotoUploadFlow({
           disabled
           className="w-full rounded-2xl bg-zinc-800 py-3 text-sm font-semibold text-zinc-500"
         >
-          Continue
+          Далее
         </button>
       )}
     </div>

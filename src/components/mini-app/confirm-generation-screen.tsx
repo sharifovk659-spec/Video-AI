@@ -23,7 +23,7 @@ export function ConfirmGenerationScreen({
 
   const start = async () => {
     if (!uploadId) {
-      setError("Photo upload is missing");
+      setError("Фото не загружено");
       return;
     }
     setLoading(true);
@@ -38,7 +38,7 @@ export function ConfirmGenerationScreen({
       await refresh();
       router.replace(`/mini-app/generations/${res.data.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to start");
+      setError(err instanceof Error ? err.message : "Не удалось начать");
       setLoading(false);
     }
   };
@@ -46,7 +46,7 @@ export function ConfirmGenerationScreen({
   return (
     <div className="space-y-5 px-4 pb-28 pt-4">
       <div>
-        <p className="text-xs text-violet-300/80">Confirmation</p>
+        <p className="text-xs text-violet-300/80">Подтверждение</p>
         <h1 className="text-xl font-semibold text-white">{templateTitle}</h1>
       </div>
 
@@ -61,20 +61,20 @@ export function ConfirmGenerationScreen({
 
       <div className="vidoo-glass space-y-2 rounded-2xl p-4 text-sm">
         <div className="flex justify-between">
-          <span className="text-zinc-400">Template cost</span>
-          <span>{creditCost} credits</span>
+          <span className="text-zinc-400">Стоимость стиля</span>
+          <span>{creditCost} кр.</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-zinc-400">Your balance</span>
+          <span className="text-zinc-400">Баланс</span>
           <span>{user?.creditBalance ?? "—"}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-zinc-400">Free left</span>
+          <span className="text-zinc-400">Бесплатно</span>
           <span>{user?.freeGenerationsRemaining ?? "—"}</span>
         </div>
         <p className="text-xs text-zinc-500">
-          Free generations are used first when available. You can leave the app
-          after starting — the job continues on the server.
+          Сначала списываются бесплатные генерации. После старта можно закрыть
+          Telegram — задача продолжится на сервере.
         </p>
       </div>
 
@@ -86,7 +86,7 @@ export function ConfirmGenerationScreen({
         onClick={() => void start()}
         className="w-full rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 py-3 text-sm font-semibold text-white disabled:opacity-50"
       >
-        {loading ? "Starting…" : "Generate video"}
+        {loading ? "Запуск…" : "Создать видео"}
       </button>
     </div>
   );
