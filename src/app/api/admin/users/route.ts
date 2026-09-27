@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApiSession } from "@/lib/admin/require-admin-api";
 import { paginationArgs, paginatedMeta } from "@/lib/api/pagination";
 import { handleApiError } from "@/lib/errors/handle-api-error";
+import { serializeAdminUserListItem } from "@/lib/admin/serialize-admin-user";
 import { prisma } from "@/lib/db/prisma";
 
 export const dynamic = "force-dynamic";
@@ -32,7 +33,10 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
-    return NextResponse.json({ data: rows, meta: paginatedMeta(total, page, pageSize) });
+    return NextResponse.json({
+      data: rows.map(serializeAdminUserListItem),
+      meta: paginatedMeta(total, page, pageSize),
+    });
   } catch (error) {
     return handleApiError(error);
   }
